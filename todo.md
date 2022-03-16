@@ -1,7 +1,8 @@
 
-TODO
+TODO:
     - leaks?
     - iterators
+    - sprites away from cell
     - loop for ng
     - mouse release handler
     - interface

@@ -4,7 +4,7 @@
 #
 
 # define the C compiler to use
-CC = clang++
+CC      := clang++
 
 # define any compile-time flags
 CFLAGS	:= -Wall -Wextra -Werror -g
@@ -12,7 +12,7 @@ CFLAGS	:= -Wall -Wextra -Werror -g
 # define library paths in addition to /usr/lib
 #   if I wanted to include libraries not in /usr/lib I'd specify
 #   their path using -Lpath, something like:
-LFLAGS = -lsfml-graphics -lsfml-window -lsfml-system
+LFLAGS  := -lsfml-graphics -lsfml-window -lsfml-system
 
 # define output directory
 OUTPUT	:= build
@@ -27,21 +27,21 @@ INCLUDE	:= include
 LIB		:= lib
 
 ifeq ($(OS),Windows_NT)
-	MAIN	:= main.exe
+	MAIN	    := main.exe
 	SOURCEDIRS	:= $(SRC)
 	INCLUDEDIRS	:= $(INCLUDE)
 	LIBDIRS		:= $(LIB)
-	FIXPATH = $(subst /,\,$1)
+	FIXPATH      = $(subst /,\,$1)
 	RM			:= del /q /f
-	MD	:= mkdir
+	MD	        := mkdir
 else
-	MAIN	:= main
+	MAIN	    := main
 	SOURCEDIRS	:= $(shell find $(SRC) -type d)
 	INCLUDEDIRS	:= $(shell find $(INCLUDE) -type d)
 	LIBDIRS		:= $(shell find $(LIB) -type d)
-	FIXPATH = $1
-	RM = rm -f
-	MD	:= mkdir -p
+	FIXPATH      = $1
+	RM           = rm -f
+	MD	        := mkdir -p
 endif
 
 # define any directories containing header files other than /usr/include
@@ -53,10 +53,10 @@ LIBS		:= $(patsubst %,-L%, $(LIBDIRS:%/=%))
 # define the C source files
 SOURCES		:= $(wildcard $(patsubst %,%/*.cpp, $(SOURCEDIRS)))
 
-HEADERS     := $(wildcard $(patsubst %,%/*.h, $(SOURCEDIRS)))
+HEADERS     := $(wildcard $(patsubst %,%/*.hpp, $(SOURCEDIRS)))
 
 # define the C object files
-OBJECTS		:= $(SOURCES:.c=.o)
+OBJECTS		:= $(SOURCES:.cpp=.o)
 
 #
 # The following part of the makefile is generic; it can be used to
