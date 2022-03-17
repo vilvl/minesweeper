@@ -29,7 +29,6 @@ auto connection_closed(set<int>::iterator Iter, set<int> &SlaveSockets) {
 }
 
 void new_connection(int serv_sock, set<int> &SlaveSockets) {
-    int cli_sock;
     sockaddr_in cli_addr;
     socklen_t cli_addr_size = sizeof(cli_addr);
     int SlaveSocket = accept(serv_sock, (struct sockaddr*)&cli_addr, &cli_addr_size);

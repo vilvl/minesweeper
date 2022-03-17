@@ -35,10 +35,10 @@ int main() {
     bool l_button_is_pressed = false;
     bool r_button_is_pressed = false;
 
-    int field_x_l = 0;
-    int field_x_r = cell_size * FIELD_WIDTH;
-    int field_y_u = 0;
-    int field_y_d = cell_size * FIELD_HIGHT;
+    // int field_x_l = 0;
+    // int field_x_r = cell_size * FIELD_WIDTH;
+    // int field_y_u = 0;
+    // int field_y_d = cell_size * FIELD_HIGHT;
 
     while (app.isOpen()) {
 

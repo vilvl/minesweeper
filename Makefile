@@ -51,9 +51,10 @@ INCLUDES	:= $(patsubst %,-I%, $(INCLUDEDIRS:%/=%))
 LIBS		:= $(patsubst %,-L%, $(LIBDIRS:%/=%))
 
 # define the C source files
-SOURCES		:= $(wildcard $(patsubst %,%/*.cpp, $(SOURCEDIRS)))
+# SOURCES		:= $(wildcard $(patsubst %,%/*.cpp, $(SOURCEDIRS)))
+SOURCES		:= src/field.cpp src/mine_sweeper_oop.cpp src/shared.cpp
 
-HEADERS     := $(wildcard $(patsubst %,%/*.hpp, $(SOURCEDIRS)))
+# HEADERS     := $(wildcard $(patsubst %,%/*.hpp, $(SOURCEDIRS)))
 
 # define the C object files
 OBJECTS		:= $(SOURCES:.cpp=.o)
