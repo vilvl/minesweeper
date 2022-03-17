@@ -7,7 +7,7 @@
 CC      := clang++
 
 # define any compile-time flags
-CFLAGS	:= -Wall -Wextra -Werror -g
+CFLAGS	:= -std=c++11 -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-variable -g
 
 # define library paths in addition to /usr/lib
 #   if I wanted to include libraries not in /usr/lib I'd specify
@@ -21,7 +21,7 @@ OUTPUT	:= build
 SRC		:= src
 
 # define include directory
-INCLUDE	:= include
+INCLUDE	:= src/include
 
 # define lib directory
 LIB		:= lib
@@ -52,7 +52,7 @@ LIBS		:= $(patsubst %,-L%, $(LIBDIRS:%/=%))
 
 # define the C source files
 # SOURCES		:= $(wildcard $(patsubst %,%/*.cpp, $(SOURCEDIRS)))
-SOURCES		:= src/field.cpp src/mine_sweeper_oop.cpp src/shared.cpp
+SOURCES		:= src/field.cpp src/mine_sweeper_sfml.cpp src/shared.cpp
 
 # HEADERS     := $(wildcard $(patsubst %,%/*.hpp, $(SOURCEDIRS)))
 
@@ -90,5 +90,5 @@ clean:
 	@echo Cleanup complete!
 
 run: all
-	./$(OUTPUTMAIN)
+	./$(OUTPUTMAIN) 3
 	@echo Executing 'run: all' complete!
