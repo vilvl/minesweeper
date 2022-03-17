@@ -61,6 +61,7 @@ public:
 private:
     FieldCell &get_cell(coords crds);
     void generate_field(coords start_crds);
+    void generate_field_probabilisticly(coords start_crds);
     void count_neighbors();
     void inc_neighbors(coords crds);
 

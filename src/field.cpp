@@ -16,6 +16,31 @@ FieldCell &Field::get_cell(coords crds) {
 }
 
 void Field::generate_field(coords start_crds) {
+    srand(time(NULL));
+    int cls = cells_total;
+    int mns = mines_total;
+    bool is_mn = true;
+    if (mns > cls/2) {
+        is_mn = false;
+        mns = cells_total - mns;
+        for (int x = 0; x < field_width; ++x)
+            for (int y = 0; y < field_hight; ++y)
+                if (!is_neighbors(start_crds, coords(x, y)))
+                    get_cell(coords(x, y)).is_mine = true;
+    }
+    while (mns) {
+        coords crds(rand() % field_width, rand() % field_hight);
+        if (is_neighbors(start_crds, crds))
+            continue;
+        FieldCell &cell = get_cell(crds);
+        if (cell.is_mine != is_mn) {
+            cell.is_mine = is_mn;
+            mns--;
+        }
+    }
+}
+
+void Field::generate_field_probabilisticly(coords start_crds) {
     int mine_probability = 100 * mines_total / cells_total;
     this->mines_total = 0;
     srand(time(NULL));
@@ -53,12 +78,12 @@ void Field::count_neighbors() {
 
 void Field::open_field() {
     // full field iterator
-    for (int i = 0; i < field_hight; ++i)
-        for (int j = 0; j < field_width; ++j) {
-            FieldCell &cell = get_cell(coords(j, i));
-            if (!cell.is_mine)
-                cell.open_cell();
-        }
+    // for (int i = 0; i < field_hight; ++i)
+    //     for (int j = 0; j < field_width; ++j) {
+    //         FieldCell &cell = get_cell(coords(j, i));
+    //         if (!cell.is_mine)
+    //             cell.open_cell();
+    //     }
 }
 
 void Field::open_cell_recursive(coords crds, bool first_iter) {
@@ -153,6 +178,7 @@ cell_condition Field::get_cell_condition(coords crds) {
             // else
             return cell_condition(cell.neighbors);
     }
+    return UNDEFINED;
 }
 
 cell_condition Field::get_true_condition(coords crds) {

@@ -114,15 +114,15 @@ void parse_args(int argc, char *argv[], u_short &field_width, u_short &field_hig
         }
         case 4: {
             if ((field_width = atoi(argv[1])) <= 0
-                    && (field_hight = atoi(argv[2])) <= 0
-                    && (total_mines = atoi(argv[3])) <= 0
-                    && total_mines >= field_hight * field_width) {
+                    || (field_hight = atoi(argv[2])) <= 0
+                    || (total_mines = atoi(argv[3])) <= 0
+                    || field_hight * field_width - total_mines < 10) {
                 std::cerr << "wrong cmd argument" << std::endl;
                 exit(1);
             }
             return;
         }
-        std::cerr << "wrong cmd argument" << std::endl;
+        // std::cerr << "wrong cmd argument\n";
         default: exit(1);
     }
 }
@@ -130,20 +130,33 @@ void parse_args(int argc, char *argv[], u_short &field_width, u_short &field_hig
 void display_score(RenderWindow &app, std::unique_ptr<Field> &field, Font &font) {
     Text text_field;
     text_field.setFont(font);
-    text_field.setCharacterSize(24); // in pixels, not points!
     text_field.setFillColor(Color::Red);
     text_field.setStyle(sf::Text::Bold);
 
-    std::string s = "mines left: " + std::to_string(field->mines_total - field->flags_total);
+    int font_size = 18;
+    std::string s = std::to_string(field->mines_total - field->flags_total);
+    text_field.setCharacterSize(font_size); // in pixels, not points!
     text_field.setString(s);
-    text_field.setPosition(Vector2f(cell_size, cell_size * interface_shift / 2.));
+    text_field.setPosition(Vector2f(cell_size / 2., (cell_size * interface_shift - font_size) / 2.));
     app.draw(text_field);
     auto time_end = (field->state == INGAME ? std::chrono::steady_clock::now() : field->time_end);
     // s.clear();
     s = std::to_string(std::chrono::duration_cast<std::chrono::seconds>(time_end - field->time_start).count());
+    text_field.setCharacterSize(font_size); // in pixels, not points!
     text_field.setString(s);
-    text_field.setPosition(Vector2f((field->field_width - 4) * cell_size, cell_size * interface_shift / 2.));
+    text_field.setPosition(Vector2f((field->field_width - 1.5) * cell_size, (cell_size * interface_shift - font_size) / 2.));
     app.draw(text_field);
+
+    if (field->state == WIN || field->state == DEFEAT) {
+        int font_size = 26;
+        s = (field->state == WIN ? "GRAZ!" : "YOU LOST");
+        text_field.setCharacterSize(32); // in pixels, not points!
+        text_field.setString(s);
+        // text_field.
+        text_field.setPosition(Vector2f((field->field_width / 2.) * cell_size - s.length() * font_size / 2.,
+                                (cell_size * interface_shift - font_size) / 2.));
+        app.draw(text_field);
+    }
 }
 
 
