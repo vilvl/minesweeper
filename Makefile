@@ -7,7 +7,7 @@
 CC      := clang++
 
 # define any compile-time flags
-CFLAGS	:= -std=c++11 -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-variable -g
+CFLAGS	:= -std=c++11 -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-variable -g -O0
 
 # define library paths in addition to /usr/lib
 #   if I wanted to include libraries not in /usr/lib I'd specify

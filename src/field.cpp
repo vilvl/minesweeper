@@ -116,23 +116,29 @@ void Field::flag_closed_neighbors(coords crds) {
     for (int i = std::max(crds.y - 1, 0); i < std::min(crds.y + 2, field_hight); i++) {
         for (int j = std::max(crds.x - 1, 0); j < std::min(crds.x + 2, field_width); j++) {
             FieldCell &cell = get_cell(coords(j, i));
-            if (cell.state == CLOSED)
+            if (cell.state == CLOSED) {
                 cell.state = FLAGGED;
+                this->flags_total += 1;
+            }
         }
     }
 }
 
 void Field::check_win_condition() {
-    if (state != DEFEAT)
+    if (state == INGAME || state == PAUSE)
         this->state = (mines_total + cells_opened == cells_total ? WIN : INGAME);
 }
 
 void Field::set_flag(coords crds) {
     FieldCell &cell = get_cell(crds);
-    if (cell.state != OPENED) {
-        cell.set_flag();
-    } else {
+    if (cell.state == OPENED) {
         flag_closed_neighbors(crds);
+    } else if (cell.state == CLOSED) {
+        cell.state = FLAGGED;
+        this->flags_total += 1;
+    } else {  // if state == FLAGGED
+        cell.state = CLOSED;
+        this->flags_total -= 1;
     }
 }
 

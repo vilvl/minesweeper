@@ -3,6 +3,7 @@
 #include "field_cell.hpp"
 
 #include <algorithm>  // min & max
+#include <chrono>
 #include <ctime>      // time
 #include <cstdlib>    // srand
 #include <memory>
@@ -38,7 +39,8 @@ typedef enum cell_condition {
 enum FieldState {
     WIN,
     DEFEAT,
-    INGAME
+    INGAME,
+    PAUSE
 };
 
 class Field {
@@ -49,9 +51,12 @@ public:
     int field_width;
     int field_hight;
     int mines_total;
-    int cells_opened = 0;
     int cells_total;
-    FieldState state = INGAME;
+    int cells_opened = 0;
+    int flags_total = 0;
+    FieldState state = PAUSE;
+    std::chrono::steady_clock::time_point time_start;
+    std::chrono::steady_clock::time_point time_end = time_start;
 
 private:
     FieldCell &get_cell(coords crds);

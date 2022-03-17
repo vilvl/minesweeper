@@ -1,6 +1,7 @@
 #include "include/field.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <iostream>
 #include <memory>
 #include <utility>
@@ -40,7 +41,7 @@ cell_condition get_sprite(std::unique_ptr<Field> &field, coords current_cell_pos
 
 void handle_field_events(Event &event, std::unique_ptr<Field> &field,
                          coords crds, m_buttons_state &m_buttons) {
-    if (field->state != INGAME)
+    if (field->state != INGAME && field->state != PAUSE)
         return;
     if (event.type == Event::MouseButtonPressed && event.mouseButton.button == Mouse::Left)
         m_buttons.l = true;
@@ -50,12 +51,20 @@ void handle_field_events(Event &event, std::unique_ptr<Field> &field,
     }
     if (event.type == Event::MouseButtonReleased && event.mouseButton.button == Mouse::Left) {
         m_buttons.l = false;
-        if (field->cells_opened == 0)
+        if (field->cells_opened == 0) {
             field->init(crds);
+            field->time_start = std::chrono::steady_clock::now();
+        }
         field->open_cell(crds);
     }
     if (event.type == Event::MouseButtonReleased && event.mouseButton.button == Mouse::Right) {
         m_buttons.r = false;
+    }
+    // if (event.type == Event::KeyPressed && event.key == Keyboard::Escape)
+    //     field->state = PAUSE;
+    if (field->state == WIN || field->state == DEFEAT) {
+        field->time_end = std::chrono::steady_clock::now();
+        field->open_field();
     }
 }
 
@@ -118,14 +127,43 @@ void parse_args(int argc, char *argv[], u_short &field_width, u_short &field_hig
     }
 }
 
+void display_score(RenderWindow &app, std::unique_ptr<Field> &field, Font &font) {
+    Text text_field;
+    text_field.setFont(font);
+    text_field.setCharacterSize(24); // in pixels, not points!
+    text_field.setFillColor(Color::Red);
+    text_field.setStyle(sf::Text::Bold);
+
+    std::string s = "mines left: " + std::to_string(field->mines_total - field->flags_total);
+    text_field.setString(s);
+    text_field.setPosition(Vector2f(cell_size, cell_size * interface_shift / 2.));
+    app.draw(text_field);
+    auto time_end = (field->state == INGAME ? std::chrono::steady_clock::now() : field->time_end);
+    // s.clear();
+    s = std::to_string(std::chrono::duration_cast<std::chrono::seconds>(time_end - field->time_start).count());
+    text_field.setString(s);
+    text_field.setPosition(Vector2f((field->field_width - 4) * cell_size, cell_size * interface_shift / 2.));
+    app.draw(text_field);
+}
+
+
 int main(int argc, char *argv[]) {
     u_short field_width, field_hight, mines_total;
     parse_args(argc, argv, field_width, field_hight, mines_total);
 
     RenderWindow app(VideoMode(cell_size * field_width,  (interface_shift + field_hight) * cell_size), "MineSweeper");
+
+    // load textures
     Texture cell_textures;
-    cell_textures.loadFromFile("resources/heb_tiles.jpg");
+    if (!cell_textures.loadFromFile("resources/heb_tiles.jpg")) {
+        exit(2);
+    }
     Sprite cell_sprites(cell_textures);
+
+    Font font;
+    if (!font.loadFromFile("resources/arial.ttf")) {
+        exit(2);
+    }
 
     std::unique_ptr<Field> field(new Field(field_width, field_hight, mines_total));
 
@@ -147,8 +185,6 @@ int main(int argc, char *argv[]) {
                 handle_interface_events(event, field, crds, m_buttons);
             }
         }
-        if (field->state == WIN || field->state == DEFEAT)
-            field->open_field();
 		app.clear(Color::White);
 		for (int x = 0; x < field->field_width; x++) {
 			for (int y = 0; y < field->field_hight; y++) {
@@ -162,6 +198,7 @@ int main(int argc, char *argv[]) {
                 app.draw(cell_sprites);
 			}
         }
+        display_score(app, field, font);
 		app.display();
 	}
 
