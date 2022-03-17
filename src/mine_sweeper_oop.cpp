@@ -29,43 +29,52 @@ int main() {
     cell_textures.loadFromFile("resources/tiles.jpg");
     Sprite cell_sprites(cell_textures);
 
-    int gameover = 0;
     std::unique_ptr<Field> field(new Field(FIELD_HIGHT, FIELD_WIDTH, total_mines));
+    int gameover = 0;
 
     bool l_button_is_pressed = false;
     bool r_button_is_pressed = false;
 
-    while (app.isOpen() && !gameover) {
+    int field_x_l = 0;
+    int field_x_r = cell_size * FIELD_WIDTH;
+    int field_y_u = 0;
+    int field_y_d = cell_size * FIELD_HIGHT;
+
+    while (app.isOpen()) {
 
 		Vector2i mouse_pos = Mouse::getPosition(app);
         Vector2f scaled_mouse_pos = app.mapPixelToCoords(mouse_pos);
-
         coords crds(scaled_mouse_pos.x / cell_size, scaled_mouse_pos.y / cell_size);
+
 		Event event;
 		while (app.pollEvent(event)) {
-			if (event.type == Event::Closed)
-				app.close();
-            if (event.type == Event::MouseButtonPressed && event.mouseButton.button == Mouse::Left)
-                l_button_is_pressed = true;
-            if (event.type == Event::MouseButtonPressed && event.mouseButton.button == Mouse::Right)
-                r_button_is_pressed = true;
-            if (event.type == Event::MouseButtonReleased && event.mouseButton.button == Mouse::Left) {
-                l_button_is_pressed = false;
-                if (r_button_is_pressed) {
-                    gameover = field->open_closed_neighbors(crds);
-                } else {
-                    if (field->cells_opened == 0)
-                        field->init(crds);
-                    gameover = field->open_cell(crds);
+            if (true) {  // coords is inside field
+                if (event.type == Event::Closed)
+                    app.close();
+                if (event.type == Event::MouseButtonPressed && event.mouseButton.button == Mouse::Left)
+                    l_button_is_pressed = true;
+                if (event.type == Event::MouseButtonPressed && event.mouseButton.button == Mouse::Right)
+                    r_button_is_pressed = true;
+                if (event.type == Event::MouseButtonReleased && event.mouseButton.button == Mouse::Left) {
+                    l_button_is_pressed = false;
+                    if (r_button_is_pressed) {
+                        gameover = field->open_closed_neighbors(crds);
+                    } else {
+                        if (field->cells_opened == 0)
+                            field->init(crds);
+                        gameover = field->open_cell(crds);
+                    }
+                    if (!gameover)
+                        gameover = field->check_win_condition();
                 }
-                if (!gameover)
-                    gameover = field->check_win_condition();
-            }
-            if (event.type == Event::MouseButtonReleased && event.mouseButton.button == Mouse::Right) {
-                r_button_is_pressed = false;
-                field->set_flag(crds);
-            }
-		}
+                if (event.type == Event::MouseButtonReleased && event.mouseButton.button == Mouse::Right) {
+                    r_button_is_pressed = false;
+                    field->set_flag(crds);
+                }
+		    }
+        }
+        if (gameover)
+            field->open_field();
 
 		app.clear(Color::White);
 		for (int x = 0; x < FIELD_WIDTH; x++) {
@@ -78,6 +87,7 @@ int main() {
         }
 		app.display();
 	}
+
     field.reset();
     if (app.isOpen())
         app.close();
