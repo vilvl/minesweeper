@@ -41,7 +41,7 @@ cell_condition get_sprite(std::unique_ptr<Field> &field, coords current_cell_pos
 
 void handle_field_events(Event &event, std::unique_ptr<Field> &field,
                          coords crds, m_buttons_state &m_buttons) {
-    if (field->state != INGAME && field->state != PAUSE)
+    if (field->state != INGAME && field->state != NEWGAME)
         return;
     if (event.type == Event::MouseButtonPressed && event.mouseButton.button == Mouse::Left)
         m_buttons.l = true;
@@ -63,7 +63,8 @@ void handle_field_events(Event &event, std::unique_ptr<Field> &field,
     // if (event.type == Event::KeyPressed && event.key == Keyboard::Escape)
     //     field->state = PAUSE;
     if (field->state == WIN || field->state == DEFEAT) {
-        field->time_end = std::chrono::steady_clock::now();
+        field->ingame_time_total += field->ingame_time;
+        field->ingame_time = 0;
         field->open_field();
     }
 }
@@ -75,6 +76,19 @@ void handle_interface_events(Event &event, std::unique_ptr<Field> &field,
         u_short field_hight = field->field_hight;
         u_short mines_total = field->mines_total;
         field.reset(new Field(field_width, field_hight, mines_total));
+    }
+}
+
+void handle_keyboard_event(Event &event, std::unique_ptr<Field> &field) {
+    if (event.type == Event::KeyPressed && event.key.code == Keyboard::Escape) {
+        if (field->state == INGAME) {
+            field->state = PAUSE;
+            field->ingame_time_total += field->ingame_time;
+            field->ingame_time = 0;
+        } else if (field->state == PAUSE) {
+            field->state = INGAME;
+            field->time_start = std::chrono::steady_clock::now();
+        }
     }
 }
 
@@ -127,6 +141,12 @@ void parse_args(int argc, char *argv[], u_short &field_width, u_short &field_hig
     }
 }
 
+void upate_time(std::unique_ptr<Field> &field) {
+    if (field->state == INGAME)
+        field->ingame_time = std::chrono::duration_cast<std::chrono::seconds>
+                                (std::chrono::steady_clock::now() - field->time_start).count();
+}
+
 void display_score(RenderWindow &app, std::unique_ptr<Field> &field, Font &font) {
     Text text_field;
     text_field.setFont(font);
@@ -139,17 +159,15 @@ void display_score(RenderWindow &app, std::unique_ptr<Field> &field, Font &font)
     text_field.setString(s);
     text_field.setPosition(Vector2f(cell_size / 2., (cell_size * interface_shift - font_size) / 2.));
     app.draw(text_field);
-    auto time_end = (field->state == INGAME ? std::chrono::steady_clock::now() : field->time_end);
-    // s.clear();
-    s = std::to_string(std::chrono::duration_cast<std::chrono::seconds>(time_end - field->time_start).count());
+    s = std::to_string(field->ingame_time_total + field->ingame_time);
     text_field.setCharacterSize(font_size); // in pixels, not points!
     text_field.setString(s);
     text_field.setPosition(Vector2f((field->field_width - 1.5) * cell_size, (cell_size * interface_shift - font_size) / 2.));
     app.draw(text_field);
 
-    if (field->state == WIN || field->state == DEFEAT) {
+    if (field->state == WIN || field->state == DEFEAT || field->state == PAUSE) {
         int font_size = 26;
-        s = (field->state == WIN ? "GRAZ!" : "YOU LOST");
+        s = (field->state == WIN ? "GRAZ!" : (field->state == DEFEAT ? "YOU LOST" : "PAUSE"));
         text_field.setCharacterSize(32); // in pixels, not points!
         text_field.setString(s);
         // text_field.
@@ -158,7 +176,6 @@ void display_score(RenderWindow &app, std::unique_ptr<Field> &field, Font &font)
         app.draw(text_field);
     }
 }
-
 
 int main(int argc, char *argv[]) {
     u_short field_width, field_hight, mines_total;
@@ -197,6 +214,7 @@ int main(int argc, char *argv[]) {
             } else {
                 handle_interface_events(event, field, crds, m_buttons);
             }
+            handle_keyboard_event(event, field);
         }
 		app.clear(Color::White);
 		for (int x = 0; x < field->field_width; x++) {
@@ -211,6 +229,7 @@ int main(int argc, char *argv[]) {
                 app.draw(cell_sprites);
 			}
         }
+        upate_time(field);
         display_score(app, field, font);
 		app.display();
 	}

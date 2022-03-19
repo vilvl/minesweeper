@@ -37,6 +37,7 @@ typedef enum cell_condition {
 } cell_condition;
 
 enum FieldState {
+    NEWGAME,
     WIN,
     DEFEAT,
     INGAME,
@@ -54,9 +55,10 @@ public:
     int cells_total;
     int cells_opened = 0;
     int flags_total = 0;
-    FieldState state = PAUSE;
+    FieldState state = NEWGAME;
     std::chrono::steady_clock::time_point time_start;
-    std::chrono::steady_clock::time_point time_end = time_start;
+    u_int ingame_time = 0;
+    u_int ingame_time_total = 0;
 
 private:
     FieldCell &get_cell(coords crds);

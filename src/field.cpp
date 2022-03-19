@@ -38,23 +38,25 @@ void Field::generate_field(coords start_crds) {
             mns--;
         }
     }
+    this->state = INGAME;
+    this->time_start = std::chrono::steady_clock::now();
 }
 
-void Field::generate_field_probabilisticly(coords start_crds) {
-    int mine_probability = 100 * mines_total / cells_total;
-    this->mines_total = 0;
-    srand(time(NULL));
-    // full field iterator
-    for (int i = 0; i < field_hight; ++i) {
-        for (int j = 0; j < field_width; ++j) {
-            bool mine = false;
-            if (i != start_crds.y || j != start_crds.x)
-                mine = (rand() % 100 < mine_probability);
-            get_cell(coords(j, i)).set_mine(mine);
-            this->mines_total += mine;
-        }
-    }
-}
+// void Field::generate_field_probabilisticly(coords start_crds) {
+//     int mine_probability = 100 * mines_total / cells_total;
+//     this->mines_total = 0;
+//     srand(time(NULL));
+//     // full field iterator
+//     for (int i = 0; i < field_hight; ++i) {
+//         for (int j = 0; j < field_width; ++j) {
+//             bool mine = false;
+//             if (i != start_crds.y || j != start_crds.x)
+//                 mine = (rand() % 100 < mine_probability);
+//             get_cell(coords(j, i)).set_mine(mine);
+//             this->mines_total += mine;
+//         }
+//     }
+// }
 
 void Field::init(coords start_crds) {
     generate_field(start_crds);
@@ -150,7 +152,7 @@ void Field::flag_closed_neighbors(coords crds) {
 }
 
 void Field::check_win_condition() {
-    if (state == INGAME || state == PAUSE)
+    if (state == INGAME)
         this->state = (mines_total + cells_opened == cells_total ? WIN : INGAME);
 }
 

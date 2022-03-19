@@ -1,17 +1,9 @@
 #pragma once
 
-#include <algorithm>
-#include <cstdlib>
-#include <cstring>
 #include <iostream>
-#include <set>
+#include <memory>
 
-#include <arpa/inet.h>
-#include <fcntl.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <unistd.h>
+#include <SFML/Network.hpp>
 
 #define MAX_PORT 65535
 
@@ -26,5 +18,3 @@ struct msg {
     size_t len;
     char * msg;
 };
-
-int set_nonblock(int fd);

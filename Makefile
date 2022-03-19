@@ -7,7 +7,8 @@
 CC      := clang++
 
 # define any compile-time flags
-CFLAGS	:= -std=c++11 -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-variable -g -O0
+CFLAGS	:= -std=c++11 -Wall -Werror -pedantic-errors -g3 -O0
+#-Wno-unused-parameter -Wno-unused-variable
 
 # define library paths in addition to /usr/lib
 #   if I wanted to include libraries not in /usr/lib I'd specify
@@ -52,7 +53,7 @@ LIBS		:= $(patsubst %,-L%, $(LIBDIRS:%/=%))
 
 # define the C source files
 # SOURCES		:= $(wildcard $(patsubst %,%/*.cpp, $(SOURCEDIRS)))
-SOURCES		:= src/field.cpp src/mine_sweeper_sfml.cpp src/shared.cpp
+SOURCES		:= src/field.cpp src/mine_sweeper_sfml.cpp
 
 # HEADERS     := $(wildcard $(patsubst %,%/*.hpp, $(SOURCEDIRS)))
 

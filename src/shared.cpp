@@ -1,13 +1,10 @@
 #include "include/shared.hpp"
 
-int set_nonblock(int fd) {
-    int flags;
-    #if defined (O_NONBLOCK)
-        if (-1 == (flags = fcntl(fd, F_GETFL, 0)))
-            flags = 0;
-        return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-    #else
-        flags = 1;
-        return ioctl(fd, FIOBIO, &flags);
-    #endif
+sf::Socket::Status receiveWithTimeout(sf::TcpSocket& socket, sf::Packet& packet, sf::Time timeout) {
+    sf::SocketSelector selector;
+    selector.add(socket);
+    if (selector.wait(timeout))
+        return socket.receive(packet);
+    else
+        return sf::Socket::NotReady;
 }

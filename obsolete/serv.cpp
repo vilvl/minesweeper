@@ -1,8 +1,4 @@
-#include "sf::Font font;
-if (!font.loadFromFile("arial.ttf"))
-{
-    // error...
-}shared.hpp"
+#include "shared.hpp"
 
 using namespace std;
 
