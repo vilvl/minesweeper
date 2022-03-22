@@ -170,7 +170,8 @@ int main(int argc, char *argv[]) {
     parse_args(argc, argv, field_width, field_hight, mines_total);
 
     RenderWindow app(VideoMode(cell_size * field_width,  (interface_shift + field_hight) * cell_size), "MineSweeper");
-
+    app.setFramerateLimit(60);
+    
     // load textures
     Texture cell_textures;
     if (!cell_textures.loadFromFile("resources/heb_tiles.jpg")) {

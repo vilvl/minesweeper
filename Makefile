@@ -118,7 +118,7 @@ clean:
 	@echo Cleanup complete!
 
 run: $(MAIN)
-	./$(OUTPUTMAIN) 2
+	./$(OUTPUTMAIN) 3
 	@echo Executing 'run: main' complete!
 
 run_serv: $(SERVER)
