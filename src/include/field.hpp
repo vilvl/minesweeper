@@ -9,10 +9,12 @@
 #include <memory>
 #include <vector>
 
+#include <SFML/Network.hpp>
+
 struct coords {
 public:
-    int x;
-    int y;
+    int16_t x;
+    int16_t y;
     coords(int x, int y): x(x), y(y) {};
     bool operator==(coords& other) const {
         return (x == other.x && y == other.y);
@@ -49,16 +51,16 @@ private:
     std::unique_ptr<std::vector<std::vector<FieldCell>>> cells;
 
 public:
-    int field_width;
-    int field_hight;
-    int mines_total;
-    int cells_total;
-    int cells_opened = 0;
-    int flags_total = 0;
+    uint16_t field_width;
+    uint16_t field_hight;
+    uint32_t mines_total;
+    uint32_t cells_total;
+    uint32_t cells_opened = 0;
+    uint32_t flags_total = 0;
     FieldState state = NEWGAME;
     std::chrono::steady_clock::time_point time_start;
-    u_int ingame_time = 0;
-    u_int ingame_time_total = 0;
+    uint32_t ingame_time = 0;
+    uint32_t ingame_time_total = 0;
 
 private:
     FieldCell &get_cell(coords crds);
@@ -66,21 +68,22 @@ private:
     void generate_field_probabilisticly(coords start_crds);
     void count_neighbors();
     void inc_neighbors(coords crds);
+    void open_cell_recursive(coords crds, bool first_iter = false);
+    FieldCell &iterate(coords *crds);
 
 public:
-    Field(int field_width, int field_hight, int mines_total);
+    Field(uint16_t field_width, uint16_t field_hight, uint32_t mines_total);
     ~Field();
     void init(coords crds);
     void check_win_condition();
     void open_cell(coords crds);
-    void open_cell_recursive(coords crds, bool first_iter = false);
     void open_closed_neighbors(coords crds);
-    void open_field();
     void set_flag(coords crds);
-    int count_closed_neighbors(coords crds);
-    int count_flaged_neighbors(coords crds);
+    uint8_t count_closed_neighbors(coords crds);
+    uint8_t count_flaged_neighbors(coords crds);
     void flag_closed_neighbors(coords crds);
     cell_condition get_cell_condition(coords crds);
     cell_condition get_true_condition(coords crds);
     bool is_neighbors(coords current_cell_pos, coords mouse_pos);
+    void set_pause();
 };

@@ -51,10 +51,6 @@ void handle_field_events(Event &event, std::unique_ptr<Field> &field,
     }
     if (event.type == Event::MouseButtonReleased && event.mouseButton.button == Mouse::Left) {
         m_buttons.l = false;
-        if (field->cells_opened == 0) {
-            field->init(crds);
-            field->time_start = std::chrono::steady_clock::now();
-        }
         field->open_cell(crds);
     }
     if (event.type == Event::MouseButtonReleased && event.mouseButton.button == Mouse::Right) {
@@ -65,30 +61,22 @@ void handle_field_events(Event &event, std::unique_ptr<Field> &field,
     if (field->state == WIN || field->state == DEFEAT) {
         field->ingame_time_total += field->ingame_time;
         field->ingame_time = 0;
-        field->open_field();
     }
 }
 
 void handle_interface_events(Event &event, std::unique_ptr<Field> &field,
                              coords crds, m_buttons_state &m_buttons) {
     if (event.type == Event::MouseButtonReleased && event.mouseButton.button == Mouse::Left) {
-        u_short field_width = field->field_width;
-        u_short field_hight = field->field_hight;
-        u_short mines_total = field->mines_total;
+        uint16_t field_width = field->field_width;
+        uint16_t field_hight = field->field_hight;
+        uint32_t mines_total = field->mines_total;
         field.reset(new Field(field_width, field_hight, mines_total));
     }
 }
 
 void handle_keyboard_event(Event &event, std::unique_ptr<Field> &field) {
     if (event.type == Event::KeyPressed && event.key.code == Keyboard::Escape) {
-        if (field->state == INGAME) {
-            field->state = PAUSE;
-            field->ingame_time_total += field->ingame_time;
-            field->ingame_time = 0;
-        } else if (field->state == PAUSE) {
-            field->state = INGAME;
-            field->time_start = std::chrono::steady_clock::now();
-        }
+        field->set_pause();
     }
 }
 

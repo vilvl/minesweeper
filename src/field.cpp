@@ -1,6 +1,6 @@
 #include "include/field.hpp"
 
-Field::Field(int field_width, int field_hight, int mines_total):
+Field::Field(uint16_t field_width, uint16_t field_hight, uint32_t mines_total):
             field_width(field_width),
             field_hight(field_hight),
             mines_total(mines_total) {
@@ -65,8 +65,8 @@ void Field::init(coords start_crds) {
 
 void Field::inc_neighbors(coords crds) {
     // neighbor iterator
-    for (int i = std::max(crds.y - 1, 0); i < std::min(crds.y + 2, field_hight); i++)
-        for (int j = std::max(crds.x - 1, 0); j < std::min(crds.x + 2, field_width); j++)
+    for (int i = std::max(crds.y - 1, 0); i < std::min(crds.y + 2, field_hight + 0); i++)
+        for (int j = std::max(crds.x - 1, 0); j < std::min(crds.x + 2, field_width + 0); j++)
             get_cell(coords(j, i)).neighbors++;
 }
 
@@ -76,16 +76,6 @@ void Field::count_neighbors() {
         for (int j = 0; j < field_width; ++j)
             if (get_cell(coords(j, i)).is_mine)
                 inc_neighbors(coords(j, i));
-}
-
-void Field::open_field() {
-    // full field iterator
-    // for (int i = 0; i < field_hight; ++i)
-    //     for (int j = 0; j < field_width; ++j) {
-    //         FieldCell &cell = get_cell(coords(j, i));
-    //         if (!cell.is_mine)
-    //             cell.open_cell();
-    //     }
 }
 
 void Field::open_cell_recursive(coords crds, bool first_iter) {
@@ -104,6 +94,10 @@ void Field::open_cell_recursive(coords crds, bool first_iter) {
 }
 
 void Field::open_cell(coords crds) {
+    if (cells_opened == 0) {
+        init(crds);
+        this->time_start = std::chrono::steady_clock::now();
+    }
     open_cell_recursive(crds, true);
     check_win_condition();
 }
@@ -112,27 +106,27 @@ void Field::open_closed_neighbors(coords crds) {
     // neighbor iterator
     if (get_cell(crds).state != OPENED || get_cell(crds).neighbors != count_flaged_neighbors(crds))
         return;
-    for (int i = std::max(crds.y - 1, 0); i < std::min(crds.y + 2, field_hight); i++)
-        for (int j = std::max(crds.x - 1, 0); j < std::min(crds.x + 2, field_width); j++)
+    for (int i = std::max(crds.y - 1, 0); i < std::min(crds.y + 2, field_hight + 0); i++)
+        for (int j = std::max(crds.x - 1, 0); j < std::min(crds.x + 2, field_width + 0); j++)
             open_cell_recursive(coords(j, i));
 }
 
-int Field::count_flaged_neighbors(coords crds) {
+uint8_t Field::count_flaged_neighbors(coords crds) {
     // neighbor iterator
     int counter = 0;
-    for (int i = std::max(crds.y - 1, 0); i < std::min(crds.y + 2, field_hight); i++)
-        for (int j = std::max(crds.x - 1, 0); j < std::min(crds.x + 2, field_width); j++)
-            if (get_cell(coords(j, i)).state == FLAGGED)
+    for (int i = std::max(crds.y - 1, 0); i < std::min(crds.y + 2, field_hight + 0); i++)
+        for (int j = std::max(crds.x - 1, 0); j < std::min(crds.x + 2, field_width + 0); j++)
+            if (get_cell(coords(j, i)).state == FLAGGED || get_cell(coords(j, i)).state == OPENED_MINE)
                 counter++;
     return counter;
 }
 
-int Field::count_closed_neighbors(coords crds) {
+uint8_t Field::count_closed_neighbors(coords crds) {
     // neighbor iterator
     int counter = 0;
-    for (int i = std::max(crds.y - 1, 0); i < std::min(crds.y + 2, field_hight); i++)
-        for (int j = std::max(crds.x - 1, 0); j < std::min(crds.x + 2, field_width); j++)
-            if (get_cell(coords(j, i)).state != OPENED)
+     for (int i = std::max(crds.y - 1, 0); i < std::min(crds.y + 2, field_hight + 0); i++)
+        for (int j = std::max(crds.x - 1, 0); j < std::min(crds.x + 2, field_width + 0); j++)
+            if (get_cell(coords(j, i)).state != OPENED && get_cell(coords(j, i)).state != OPENED_MINE)
                 counter++;
     return counter;
 }
@@ -140,14 +134,25 @@ int Field::count_closed_neighbors(coords crds) {
 void Field::flag_closed_neighbors(coords crds) {
     if (count_closed_neighbors(crds) != get_cell(crds).neighbors)
         return;
-    for (int i = std::max(crds.y - 1, 0); i < std::min(crds.y + 2, field_hight); i++) {
-        for (int j = std::max(crds.x - 1, 0); j < std::min(crds.x + 2, field_width); j++) {
+     for (int i = std::max(crds.y - 1, 0); i < std::min(crds.y + 2, field_hight + 0); i++) {
+        for (int j = std::max(crds.x - 1, 0); j < std::min(crds.x + 2, field_width + 0); j++) {
             FieldCell &cell = get_cell(coords(j, i));
             if (cell.state == CLOSED) {
                 cell.state = FLAGGED;
                 this->flags_total += 1;
             }
         }
+    }
+}
+
+void Field::set_pause() {
+    if (state == INGAME) {
+        this->state = PAUSE;
+        this->ingame_time_total += ingame_time;
+        this->ingame_time = 0;
+    } else if (state == PAUSE) {
+        this->state = INGAME;
+        this->time_start = std::chrono::steady_clock::now();
     }
 }
 
@@ -174,11 +179,8 @@ cell_condition Field::get_cell_condition(coords crds) {
     switch (cell.state) {
         case CLOSED: return UNDEFINED;
         case FLAGGED: return FLAG;
-        case OPENED:
-            // if (cell.is_mine)
-            //     return MINE;
-            // else
-            return cell_condition(cell.neighbors);
+        case OPENED: return cell_condition(cell.neighbors);
+        case OPENED_MINE: return EXPLODED;
     }
     return UNDEFINED;
 }

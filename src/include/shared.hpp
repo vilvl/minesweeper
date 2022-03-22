@@ -2,19 +2,43 @@
 
 #include <iostream>
 #include <memory>
+#include <map>
+
+#include "field.hpp"
 
 #include <SFML/Network.hpp>
 
 #define MAX_PORT 65535
 
+inline sf::Packet& operator <<(sf::Packet& packet, const coords& crds) {
+    return packet << crds.x << crds.y;
+}
+
+inline sf::Packet& operator >>(sf::Packet& packet, coords& crds) {
+    return packet >> crds.x >> crds.y;
+}
+
+namespace cli {
+
 enum msg_type {
-    DEFAULT,
-    NEW_CONNECTION,
-    CONNECTION_CLOSED
+    SET_NAME,   // + name
+    NEW_GAME,   //
+    PAUSE,      //
+    OPEN_CELL,  // + coords
+    FLAG_CELL,  // + coords
 };
 
-struct msg {
-    msg_type type;
-    size_t len;
-    char * msg;
+}
+
+namespace srv {
+
+enum msg_type {
+    NEW_GAME,       // + field_width + field_hight + mine_counter
+    PAUSE,          //
+    PLAYERS,        // + number + names
+    END_WIN,        // + field_state
+    END_DEFEAT,     // + field_state
+    ITER,           // + field_state
 };
+
+}

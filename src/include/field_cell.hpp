@@ -3,7 +3,8 @@
 typedef enum cell_state{
     FLAGGED,
     OPENED,
-    CLOSED
+    CLOSED,
+    OPENED_MINE
 } cell_state;
 
 class FieldCell {
@@ -22,14 +23,15 @@ public:
             state = (state == FLAGGED ? CLOSED : FLAGGED);
     };
     int open_cell() {
-        if (state == OPENED)
+        if (state == OPENED || state == OPENED_MINE)
             return -1;
         if (state == FLAGGED)
             return -2;
-        state = OPENED;
         if (is_mine) {
+            state = OPENED_MINE;
             return -3;
         } else {
+            state = OPENED;
             return neighbors;
         }
     };
