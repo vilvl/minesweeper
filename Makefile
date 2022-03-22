@@ -112,7 +112,9 @@ clean:
 	$(RM) $(OUTPUTMAIN)
 	$(RM) $(OUTPUTSERV)
 	$(RM) $(OUTPUTCLI)
-	$(RM) $(call FIXPATH,$(OBJECTS))
+	$(RM) $(call FIXPATH,$(OBJECTS_CLI))
+	$(RM) $(call FIXPATH,$(OBJECTS_MAIN))
+	$(RM) $(call FIXPATH,$(OBJECTS_SERV))
 	@echo Cleanup complete!
 
 run: $(MAIN)
