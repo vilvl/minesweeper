@@ -18,8 +18,8 @@ struct m_buttons_state {
 
 class StandAloneApp {
 public:
-    RenderWindow window;
     std::unique_ptr<Field> field;
+    RenderWindow window;
     Font font;
     Texture cell_textures;
     Sprite cell_sprites;
@@ -138,6 +138,79 @@ void StandAloneApp::display_score() {
     }
 }
 
+void StandAloneApp::main_loop() {
+    while (window.isOpen()) {
+		// Vector2i mouse_pos = Mouse::getPosition(app);
+        Vector2f scaled_mouse_pos = window.mapPixelToCoords(Mouse::getPosition(window));
+        coords crds(scaled_mouse_pos.x / cell_size, (scaled_mouse_pos.y - interface_shift)/ cell_size);
+
+        Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == Event::Closed)
+                window.close();
+            if (scaled_mouse_pos.y >= interface_shift) {
+                handle_field_events(event, crds);
+            } else {
+                handle_interface_events(event, scaled_mouse_pos);
+            }
+            handle_keyboard_event(event);
+        }
+		window.clear(Color::White);
+		for (int x = 0; x < field->field_width; x++) {
+			for (int y = 0; y < field->field_hight; y++) {
+                cell_condition sprite;
+                if (field->state == WIN || field->state == DEFEAT)
+                    sprite = get_end_sprite(coords(x, y));
+                else
+                    sprite = get_sprite(coords(x, y), crds);
+				cell_sprites.setTextureRect(IntRect(sprite * cell_size, 0, cell_size, cell_size));
+				cell_sprites.setPosition(x * cell_size, interface_shift + y * cell_size);
+                window.draw(cell_sprites);
+			}
+        }
+        upate_time();
+        display_score();
+		window.display();
+	}
+}
+
+void StandAloneApp::init_window(int field_width, int field_hight) {
+    window.create(VideoMode(cell_size * field_width, interface_shift + field_hight * cell_size), "MineSweeper");
+    window.setFramerateLimit(framerate);
+}
+
+void StandAloneApp::set_sprites(std::string sprite_path) {
+    if (!cell_textures.loadFromFile(sprite_path)) {
+        std::cerr << "sprites was not found" << std::endl;
+        exit(2);
+    }
+    cell_textures.setSmooth(true);
+    cell_sprites.setTexture(cell_textures);
+}
+
+void StandAloneApp::set_font(std::string font_path) {
+    if (!font.loadFromFile(font_path)) {
+        std::cerr << "sprites was not found" << std::endl;
+        exit(2);
+    }
+    time_text.setFont(font);
+    mine_text.setFont(font);
+    state_text.setFont(font);
+
+    time_text.setFillColor(Color::Red);
+    mine_text.setFillColor(Color::Red);
+    state_text.setFillColor(Color::Red);
+
+    time_text.setStyle(sf::Text::Bold);
+    mine_text.setStyle(sf::Text::Bold);
+    state_text.setStyle(sf::Text::Bold);
+
+    time_text.setCharacterSize(little_font_size);
+    mine_text.setCharacterSize(little_font_size);
+    state_text.setCharacterSize(big_font_size);
+}
+
+
 
 void load_preset(int preset, u_short &field_width, u_short &field_hight, ushort &total_mines) {
     switch (preset) {
@@ -188,93 +261,19 @@ void parse_args(int argc, char *argv[], u_short &field_width, u_short &field_hig
     }
 }
 
-void StandAloneApp::main_loop() {
-    while (window.isOpen()) {
-		// Vector2i mouse_pos = Mouse::getPosition(app);
-        Vector2f scaled_mouse_pos = window.mapPixelToCoords(Mouse::getPosition(window));
-        coords crds(scaled_mouse_pos.x / cell_size, (scaled_mouse_pos.y - interface_shift)/ cell_size);
-
-        Event event;
-        while (window.pollEvent(event)) {
-            if (event.type == Event::Closed)
-                window.close();
-            if (scaled_mouse_pos.y >= interface_shift) {
-                handle_field_events(event, crds);
-            } else {
-                handle_interface_events(event, scaled_mouse_pos);
-            }
-            handle_keyboard_event(event);
-        }
-		window.clear(Color::White);
-		for (int x = 0; x < field->field_width; x++) {
-			for (int y = 0; y < field->field_hight; y++) {
-                cell_condition sprite;
-                if (field->state == WIN || field->state == DEFEAT)
-                    sprite = get_end_sprite(coords(x, y));
-                else
-                    sprite = get_sprite(coords(x, y), crds);
-				cell_sprites.setTextureRect(IntRect(sprite * cell_size, 0, cell_size, cell_size));
-				cell_sprites.setPosition(x * cell_size, interface_shift + y * cell_size);
-                window.draw(cell_sprites);
-			}
-        }
-        upate_time();
-        display_score();
-		window.display();
-	}
-}
-
-void StandAloneApp::init_window(int field_width, int field_hight) {
-    window.create(VideoMode(cell_size * field_width, interface_shift + field_hight * cell_size), "MineSweeper");
-    window.setFramerateLimit(framerate);
-}
-
 int main(int argc, char *argv[]) {
     u_short field_width, field_hight, mines_total;
     parse_args(argc, argv, field_width, field_hight, mines_total);
 
     StandAloneApp app;
-    app.init_window(field_width, field_hight);
-
     // load textures
     app.set_sprites("resources/heb_tiles.jpg");
-
     app.set_font("resources/arial.ttf");
 
+    app.init_window(field_width, field_hight);
     app.field.reset(new Field(field_width, field_hight, mines_total));
 
     app.main_loop();
 
     return 0;
-}
-
-void StandAloneApp::set_sprites(std::string sprite_path) {
-    if (!cell_textures.loadFromFile(sprite_path)) {
-        std::cerr << "sprites was not found" << std::endl;
-        exit(2);
-    }
-    cell_textures.setSmooth(true);
-    cell_sprites.setTexture(cell_textures);
-}
-
-void StandAloneApp::set_font(std::string font_path) {
-    if (!font.loadFromFile(font_path)) {
-        std::cerr << "sprites was not found" << std::endl;
-        exit(2);
-    }
-    time_text.setFont(font);
-    mine_text.setFont(font);
-    state_text.setFont(font);
-
-    time_text.setFillColor(Color::Red);
-    mine_text.setFillColor(Color::Red);
-    state_text.setFillColor(Color::Red);
-
-    time_text.setStyle(sf::Text::Bold);
-    mine_text.setStyle(sf::Text::Bold);
-    state_text.setStyle(sf::Text::Bold);
-
-    time_text.setCharacterSize(little_font_size);
-    mine_text.setCharacterSize(little_font_size);
-    state_text.setCharacterSize(big_font_size);
 }
