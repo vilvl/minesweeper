@@ -4,7 +4,7 @@
 #
 
 # define the C compiler to use
-CC      := clang++
+CC      := g++
 
 # define any compile-time flags
 CFLAGS	:= -std=c++11 -Wall -Werror -pedantic-errors -g3 -O0 -D_GLIBCXX_DEBUG
