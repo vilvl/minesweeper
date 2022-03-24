@@ -4,10 +4,10 @@
 #
 
 # define the C compiler to use
-CC      := g++
+CC      := clang++
 
 # define any compile-time flags
-CFLAGS	:= -std=c++11 -Wall -Werror -pedantic-errors -g3 -O0 -D_GLIBCXX_DEBUG
+CFLAGS	:= -std=c++11 -Wall -Werror -pedantic-errors -g3 -O0 # -D_GLIBCXX_DEBUG
 #-Wno-unused-parameter -Wno-unused-variable
 
 # define library paths in addition to /usr/lib

@@ -23,22 +23,30 @@ public:
     Font font;
     Texture cell_textures;
     Sprite cell_sprites;
+    Text time_text;
+    Text mine_text;
+    Text state_text;
 
+    // in pixels, not points!
+    int little_font_size = 18;
+    int big_font_size = 26;
     int cell_size = 32;
-    int interface_shift = 2;
+    // in cells
+    int interface_shift = 64;
     int framerate = 30;
     struct m_buttons_state buttons_state;
 
     cell_condition get_sprite(coords current_cell_pos, coords mouse_pos);
     cell_condition get_end_sprite(coords current_cell_pos);
     void handle_field_events(Event &event, coords crds);
-    void handle_interface_events(Event &event, coords crds);
+    void handle_interface_events(Event &event, Vector2f crds);
     void handle_keyboard_event(Event &event);
     void upate_time();
     void display_score();
     void main_loop();
     void init_window(int field_width, int field_hight);
-    StandAloneApp() {};
+    void set_sprites(std::string sprite_path);
+    void set_font(std::string font_path);
 
 };
 
@@ -85,7 +93,7 @@ void StandAloneApp::handle_field_events(Event &event, coords crds) {
     }
 }
 
-void StandAloneApp::handle_interface_events(Event &event, coords crds) {
+void StandAloneApp::handle_interface_events(Event &event, Vector2f crds) {
     if (event.type == Event::MouseButtonReleased && event.mouseButton.button == Mouse::Left) {
         uint16_t field_width = field->field_width;
         uint16_t field_hight = field->field_hight;
@@ -107,37 +115,26 @@ void StandAloneApp::upate_time() {
 }
 
 void StandAloneApp::display_score() {
-    Text text_field;
-    text_field.setFont(font);
-    text_field.setFillColor(Color::Red);
-    text_field.setStyle(sf::Text::Bold);
+    mine_text.setString(std::to_string(field->mines_total - field->flags_total));
+    mine_text.setPosition(Vector2f(cell_size / 2., (interface_shift - little_font_size) / 2.));
+    window.draw(mine_text);
 
-    int font_size = 18;
-    std::string s = std::to_string(field->mines_total - field->flags_total);
-    text_field.setCharacterSize(font_size); // in pixels, not points!
-    text_field.setString(s);
-    text_field.setPosition(Vector2f(cell_size / 2., (cell_size * interface_shift - font_size) / 2.));
-    window.draw(text_field);
-    s = std::to_string(field->ingame_time_total + field->ingame_time);
-    text_field.setCharacterSize(font_size); // in pixels, not points!
-    text_field.setString(s);
-    text_field.setPosition(Vector2f((field->field_width - 1.5) * cell_size, (cell_size * interface_shift - font_size) / 2.));
-    window.draw(text_field);
+    time_text.setString(std::to_string(field->ingame_time_total + field->ingame_time));
+    time_text.setPosition(Vector2f((field->field_width - 1.5) * cell_size, (interface_shift - little_font_size) / 2.));
+    window.draw(time_text);
 
     if (field->state != INGAME) {
         int font_size = 26;
         switch(field->state) {
-            case WIN:       s = "GRAZ";         break;
-            case DEFEAT:    s = "YOU LOST";     break;
-            case PAUSE:     s = "PAUSE";        break;
-            case NEWGAME:   s = "CLICK ON THE FIELD TO START";  break;
-            default:        s = "WHY IS THIS DISPLAYED???";     break;
+            case WIN:       state_text.setString("GRAZ");         break;
+            case DEFEAT:    state_text.setString("YOU LOST");     break;
+            case PAUSE:     state_text.setString("PAUSE");        break;
+            case NEWGAME:   state_text.setString("CLICK ON THE FIELD TO START");  break;
+            default:        state_text.setString("WHY IS THIS DISPLAYED???");     break;
         }
-        text_field.setCharacterSize(32); // in pixels, not points!
-        text_field.setString(s);
-        text_field.setPosition(Vector2f((field->field_width / 2.) * cell_size - s.length() * font_size / 2.,
-                                (cell_size * interface_shift - font_size) / 2.));
-        window.draw(text_field);
+        state_text.setPosition(Vector2f((field->field_width / 2.) * cell_size - state_text.getString().getSize() * font_size / 2.5,
+                                (interface_shift - font_size) / 2.));
+        window.draw(state_text);
     }
 }
 
@@ -193,19 +190,18 @@ void parse_args(int argc, char *argv[], u_short &field_width, u_short &field_hig
 
 void StandAloneApp::main_loop() {
     while (window.isOpen()) {
-
 		// Vector2i mouse_pos = Mouse::getPosition(app);
         Vector2f scaled_mouse_pos = window.mapPixelToCoords(Mouse::getPosition(window));
-        coords crds(scaled_mouse_pos.x / cell_size, scaled_mouse_pos.y / cell_size);
+        coords crds(scaled_mouse_pos.x / cell_size, (scaled_mouse_pos.y - interface_shift)/ cell_size);
 
         Event event;
         while (window.pollEvent(event)) {
             if (event.type == Event::Closed)
                 window.close();
-            if (crds.y >= interface_shift) {
-                handle_field_events(event, coords(crds.x, crds.y - interface_shift));
+            if (scaled_mouse_pos.y >= interface_shift) {
+                handle_field_events(event, crds);
             } else {
-                handle_interface_events(event, crds);
+                handle_interface_events(event, scaled_mouse_pos);
             }
             handle_keyboard_event(event);
         }
@@ -216,9 +212,9 @@ void StandAloneApp::main_loop() {
                 if (field->state == WIN || field->state == DEFEAT)
                     sprite = get_end_sprite(coords(x, y));
                 else
-                    sprite = get_sprite(coords(x, y), coords(crds.x, crds.y - interface_shift));
+                    sprite = get_sprite(coords(x, y), crds);
 				cell_sprites.setTextureRect(IntRect(sprite * cell_size, 0, cell_size, cell_size));
-				cell_sprites.setPosition(x * cell_size, (interface_shift + y) * cell_size);
+				cell_sprites.setPosition(x * cell_size, interface_shift + y * cell_size);
                 window.draw(cell_sprites);
 			}
         }
@@ -229,7 +225,7 @@ void StandAloneApp::main_loop() {
 }
 
 void StandAloneApp::init_window(int field_width, int field_hight) {
-    window.create(VideoMode(cell_size * field_width, (interface_shift + field_hight) * cell_size), "MineSweeper");
+    window.create(VideoMode(cell_size * field_width, interface_shift + field_hight * cell_size), "MineSweeper");
     window.setFramerateLimit(framerate);
 }
 
@@ -241,21 +237,44 @@ int main(int argc, char *argv[]) {
     app.init_window(field_width, field_hight);
 
     // load textures
-    if (!app.cell_textures.loadFromFile("resources/heb_tiles.jpg")) {
-        std::cerr << "sprites was not found" << std::endl;
-        exit(2);
-    }
-    app.cell_sprites.setTexture(app.cell_textures);
+    app.set_sprites("resources/heb_tiles.jpg");
 
-
-    if (!app.font.loadFromFile("resources/arial.ttf")) {
-        std::cerr << "sprites was not found" << std::endl;
-        exit(2);
-    }
+    app.set_font("resources/arial.ttf");
 
     app.field.reset(new Field(field_width, field_hight, mines_total));
 
     app.main_loop();
 
     return 0;
+}
+
+void StandAloneApp::set_sprites(std::string sprite_path) {
+    if (!cell_textures.loadFromFile(sprite_path)) {
+        std::cerr << "sprites was not found" << std::endl;
+        exit(2);
+    }
+    cell_textures.setSmooth(true);
+    cell_sprites.setTexture(cell_textures);
+}
+
+void StandAloneApp::set_font(std::string font_path) {
+    if (!font.loadFromFile(font_path)) {
+        std::cerr << "sprites was not found" << std::endl;
+        exit(2);
+    }
+    time_text.setFont(font);
+    mine_text.setFont(font);
+    state_text.setFont(font);
+
+    time_text.setFillColor(Color::Red);
+    mine_text.setFillColor(Color::Red);
+    state_text.setFillColor(Color::Red);
+
+    time_text.setStyle(sf::Text::Bold);
+    mine_text.setStyle(sf::Text::Bold);
+    state_text.setStyle(sf::Text::Bold);
+
+    time_text.setCharacterSize(little_font_size);
+    mine_text.setCharacterSize(little_font_size);
+    state_text.setCharacterSize(big_font_size);
 }
