@@ -21,7 +21,7 @@ public:
     }
 };
 
-typedef enum cell_condition {
+enum cell_condition {
     E0 = 0,
     E1,
     E2,
@@ -35,15 +35,16 @@ typedef enum cell_condition {
     UNDEFINED,
     FLAG,
     WRONG_FLAG,
-    EXPLODED
-} cell_condition;
+    EXPLODED,
+};
 
 enum FieldState {
     NEWGAME,
     WIN,
     DEFEAT,
     INGAME,
-    PAUSE
+    PAUSE,
+    NOTINITED,
 };
 
 class Field {

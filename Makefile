@@ -7,7 +7,7 @@
 CC      := clang++
 
 # define any compile-time flags
-CFLAGS	:= -std=c++11 -Wall -Werror -pedantic-errors -g3 -O0
+CFLAGS	:= -std=c++11 -Wall -Werror -pedantic-errors -g3 -O0 -D_GLIBCXX_DEBUG
 #-Wno-unused-parameter -Wno-unused-variable
 
 # define library paths in addition to /usr/lib
@@ -58,7 +58,7 @@ LIBS		:= $(patsubst %,-L%, $(LIBDIRS:%/=%))
 # define the C source files
 # SOURCES		:= $(wildcard $(patsubst %,%/*.cpp, $(SOURCEDIRS)))
 SOURCES_MAIN	:= 	src/field.cpp \
-				src/mine_sweeper_sfml.cpp
+				src/mine_sweeper_sfml_oop.cpp
 
 SOURCES_SERV	:= src/field.cpp \
 				src/shared.cpp \
@@ -66,7 +66,7 @@ SOURCES_SERV	:= src/field.cpp \
 
 SOURCES_CLI 	:= src/field.cpp \
 				src/shared.cpp \
-				src/client.cpp
+				src/mine_client.cpp
 
 # HEADERS     := $(wildcard $(patsubst %,%/*.hpp, $(SOURCEDIRS)))
 
@@ -85,7 +85,7 @@ OUTPUTMAIN	:= $(call FIXPATH,$(OUTPUT)/$(MAIN))
 OUTPUTSERV	:= $(call FIXPATH,$(OUTPUT)/$(SERVER))
 OUTPUTCLI	:= $(call FIXPATH,$(OUTPUT)/$(CLIENT))
 
-all: $(OUTPUT) $(MAIN) $(SERVER) # $(CLIENT)
+all: $(OUTPUT) $(MAIN) $(SERVER) $(CLIENT)
 	@echo Executing 'all' complete!
 
 $(OUTPUT):
@@ -122,7 +122,7 @@ run: $(MAIN)
 	@echo Executing 'run: main' complete!
 
 run_serv: $(SERVER)
-	./$(OUTPUTSERV) 5555
+	./$(OUTPUTSERV) 5556
 	@echo Executing 'run: server' complete!
 
 run_cli: $(CLIENT)
