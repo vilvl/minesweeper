@@ -28,21 +28,18 @@ enum class cli_msg {
 
 enum class srv_msg {
     GAME_STATE,     // state
-    GAME_FIELD,     // state
-    NEW_GAME,       // + field_width + field_hight + mine_counter
-    PAUSE,          //
-    PLAYERS,        // + number + names
-    ITER,           // + field_state
-    END_WIN,        // + field_state
-    END_DEFEAT,     // + field_state
-    YOU_HOST,
-    NEW_PLAYER,
-    PLAYER_DISCONNECTED,
-    TEXT_MSG,
+    GAME_NEW,       // + field_width + field_hight + mine_counter
+    GAME_STARTED,   // players
+    GAME_FIELD,     // field
+    GAME_END_WIN,        // + field_state
+    GAME_END_DEFEAT,     // + field_state
+    PLAYER_DISCONNECTED, // + id
+    TEXT_MSG,       // + msg
 };
 
 enum class app_state {
     NOTINITED,
+    PAUSE,
     WAITING_NG,
     INGAME,
     FINISHED,

@@ -4,43 +4,49 @@
 
 using namespace std;
 
-
 struct Player {
+    static int16_t curr_id;
     bool active;
     bool host = false;
     bool ready = false;
     int32_t score = 0;
+    int16_t id = 0;
     string name = "";
     string address = "";
     unique_ptr<sf::TcpSocket> cli_sock = unique_ptr<sf::TcpSocket>(new sf::TcpSocket);
+    Player() {
+        id = curr_id++;
+    }
 };
+
+int16_t Player::curr_id = 0;
 
 inline sf::Packet& operator<<(sf::Packet &pack, vector<Player> &players) {
     pack << uint8_t(players.size());
     for (auto &player : players) {
-        pack << player.name << player.score;
+        pack << player.id << player.score;  // << player.name;
     }
     return pack;
 }
-
 
 class ServerApp {
 private:
     bool unblock_sockets;
     void send_all(sf::Packet &pack);
+    void send_to_player(Player &player, sf::Packet &pack);
     void handle_new_connection();
+    void handle_client_data(Player &player, sf::Packet &pack);
+
+    bool check_players_ready();
 
     void send_state(Player &player);
     void send_field(Player &player);
     void set_ready(Player &player);
-    void handle_client_data(Player &player, sf::Packet &pack);
     void init_new_game(uint16_t field_width, uint16_t field_hight, uint32_t mines_total);
     void set_name(Player &player, string &player_name);
     void set_pause();
     void open_cell(coords crds);
     void flag_cell(coords crds);
-    void get_app_state();
-    void pack_game_state(sf::Packet &pack);
 
 public:
     vector<Player> players;
@@ -59,6 +65,17 @@ public:
     void main_loop();
 };
 
+///////////////////////////////////////
+
+bool ServerApp::check_players_ready() {
+    for (auto &player : players) {
+        if (!player.ready)
+            return false;
+    }
+    return true;
+}
+
+
 //////////////////////////////////////////////////////////////////////////////////////////
 
 void ServerApp::send_state(Player &player) {
@@ -68,14 +85,8 @@ void ServerApp::send_state(Player &player) {
         pack << field->field_width << field->field_hight << field->mines_total;
     else
         pack << uint16_t(0) << uint16_t(0) << uint32_t(0);
-    if (player.cli_sock->send(pack) != sf::Socket::Done)
-        cerr << "Error while sending data" << endl;
-}
-
-void ServerApp::send_field(Player &player) {
-    sf::Packet pack;
-    pack << uint8_t(srv_msg::GAME_FIELD);
-
+    send_to_player(player, pack);
+    cout << "State sent" << endl;
 }
 
 void ServerApp::init_new_game(uint16_t field_width, uint16_t field_hight, uint32_t mines_total) {
@@ -86,7 +97,7 @@ void ServerApp::init_new_game(uint16_t field_width, uint16_t field_hight, uint32
     }
     this->state = app_state::WAITING_NG;
     sf::Packet pack;
-    pack << uint8_t(srv_msg::NEW_GAME) << field_width << field_hight << mines_total;
+    pack << uint8_t(srv_msg::GAME_NEW) << field_width << field_hight << mines_total;
     send_all(pack);
     cout << "New game inited" << endl;
 }
@@ -96,54 +107,60 @@ void ServerApp::set_ready(Player &player) {
         player.ready = true;
     if (state == app_state::WAITING_NG)
         player.active = true;
-    sf::Packet pack;
-    pack << uint8_t(srv_msg::PLAYERS);
-    pack << players;
-    if (player.cli_sock->send(pack) != sf::Socket::Done)
-        cerr << "Error while sending data" << endl;
+    cout << "Ready set" << endl;
 }
 
 void ServerApp::set_name(Player &player, string &player_name) {
     player.name = player_name;
-    cout << player.address << " set name to \"" << player_name << "\"" << endl;
+    cout << player.id << " set name to \"" << player_name << "\"" << endl;
 }
 
 void ServerApp::set_pause() {
-    field->set_pause();
-    sf::Packet pack;
-    pack << uint8_t(srv_msg::PAUSE) << (field->state == field_state::PAUSE);
-    send_all(pack);
+    if (state == app_state::INGAME) {
+        state = app_state::PAUSE;
+        field->set_pause();
+    } else if (state == app_state::PAUSE) {
+        state = app_state::PAUSE;
+        field->set_pause();
+    }
     cout << "pause set" << endl;
 }
 
 void ServerApp::open_cell(coords crds) {
-    if (state == app_state::WAITING_NG) {
+    if (state == app_state::WAITING_NG && check_players_ready()) {
         state = app_state::INGAME;
+        sf::Packet pack;
+        pack << uint8_t(srv_msg::GAME_STARTED) << players;
+        send_all(pack);
+    } if (state != app_state::INGAME) {
+        return;
     }
     field->open_cell(crds);
     if (field->state == field_state::WIN || field->state == field_state::DEFEAT)
         state = app_state::FINISHED;
-    sf::Packet pack;
-    pack_game_state(pack);
-    send_all(pack);
     cout << "cell opened: " << crds.x << ", " << crds.y << endl;
 }
 
 void ServerApp::flag_cell(coords crds) {
+    if (state != app_state::INGAME)
+        return;
     field->set_flag(crds);
-    sf::Packet pack;
-    pack_game_state(pack);
-    send_all(pack);
     cout << "flag set: " << crds.x << ", " << crds.y << endl;
 }
 
-void ServerApp::pack_game_state(sf::Packet &pack) {
+void ServerApp::send_field(Player &player) {
+    // msg_type << field_state << time << field << score
+    sf::Packet pack;
+    pack << uint8_t(srv_msg::GAME_FIELD);
     pack << uint8_t(field->state);
+    pack << uint32_t(field->ingame_time_total + field->ingame_time);
     for (uint16_t x = 0; x < field->field_width; ++x) {
         for (uint16_t y = 0; y < field->field_hight; ++y) {
             pack << uint8_t(field->get_sprite(coords(x,y), false, coords(0,0)));
         }
     }
+    pack << players;
+    cout << "field sent" << endl;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -211,6 +228,11 @@ void ServerApp::send_all(sf::Packet &pack) {
         if (player.ready && player.cli_sock->send(pack) != sf::Socket::Done)
             cerr << "Error while sending data" << endl;
     }
+}
+
+void ServerApp::send_to_player(Player &player, sf::Packet &pack) {
+    if (player.cli_sock->send(pack) != sf::Socket::Done)
+        cerr << "Error while sending data" << endl;
 }
 
 void ServerApp::main_loop() {
