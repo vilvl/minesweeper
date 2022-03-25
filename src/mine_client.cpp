@@ -1,5 +1,3 @@
-#include <SFML/Graphics.hpp>
-
 #include "include/shared.hpp"
 #include "include/field.hpp"
 // #include "include/button.hpp"
@@ -10,21 +8,6 @@
 
 using namespace std;
 
-
-// enum msg_type {
-//     GAME_STATE,     // state
-//     GAME_FIELD,     // state
-//     NEW_GAME,       // + field_width + field_hight + mine_counter
-//     PAUSE,          //
-//     PLAYERS,        // + number + names
-//     ITER,           // + field_state
-//     END_WIN,        // + field_state
-//     END_DEFEAT,     // + field_state
-//     YOU_HOST,
-//     NEW_PLAYER,
-//     PLAYER_DISCONNECTED,
-//     TEXT_MSG,
-// };
 
 class CliField {
 private:

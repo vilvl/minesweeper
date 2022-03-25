@@ -1,10 +1,6 @@
 #pragma once
 
-#include <iostream>
-#include <memory>
-#include <map>
-
-#include "field.hpp"
+#include "base.hpp"
 
 #include <SFML/Network.hpp>
 
@@ -18,9 +14,8 @@ inline sf::Packet& operator >>(sf::Packet& packet, coords& crds) {
     return packet >> crds.x >> crds.y;
 }
 
-namespace cli {
 
-enum msg_type {
+enum class cli_msg {
     ASK_STATE,      //
     ASK_FIELD,      //
     ASK_NEW_GAME,   //
@@ -31,11 +26,7 @@ enum msg_type {
     FLAG_CELL,      // + coords
 };
 
-}
-
-namespace srv {
-
-enum msg_type {
+enum class srv_msg {
     GAME_STATE,     // state
     GAME_FIELD,     // state
     NEW_GAME,       // + field_width + field_hight + mine_counter
@@ -50,11 +41,9 @@ enum msg_type {
     TEXT_MSG,
 };
 
-enum app_state {
+enum class app_state {
     NOTINITED,
     WAITING_NG,
     INGAME,
     FINISHED,
 };
-
-}

@@ -58,7 +58,8 @@ LIBS		:= $(patsubst %,-L%, $(LIBDIRS:%/=%))
 # define the C source files
 # SOURCES		:= $(wildcard $(patsubst %,%/*.cpp, $(SOURCEDIRS)))
 SOURCES_MAIN	:= 	src/field.cpp \
-				src/mine_sweeper_sfml_oop.cpp
+				src/mine_sweeper_sfml.cpp \
+				src/graphic.cpp
 
 SOURCES_SERV	:= src/field.cpp \
 				src/shared.cpp \

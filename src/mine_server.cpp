@@ -1,6 +1,7 @@
 #include "include/shared.hpp"
 #include "include/field.hpp"
 
+
 using namespace std;
 
 
@@ -21,6 +22,7 @@ inline sf::Packet& operator<<(sf::Packet &pack, vector<Player> &players) {
     }
     return pack;
 }
+
 
 class ServerApp {
 private:
@@ -45,7 +47,7 @@ public:
     sf::TcpListener listener;
     sf::SocketSelector selector;
     unique_ptr<Field> field = nullptr;
-    srv::app_state state = srv::NOTINITED;
+    app_state state = app_state::NOTINITED;
 
 public:
     ServerApp(u_int port, sf::IpAddress ip = sf::IpAddress::Any,
@@ -61,7 +63,7 @@ public:
 
 void ServerApp::send_state(Player &player) {
     sf::Packet pack;
-    pack << uint8_t(srv::GAME_STATE) << (this->state);
+    pack << uint8_t(srv_msg::GAME_STATE) << uint8_t(this->state);
     if (field)
         pack << field->field_width << field->field_hight << field->mines_total;
     else
@@ -72,7 +74,7 @@ void ServerApp::send_state(Player &player) {
 
 void ServerApp::send_field(Player &player) {
     sf::Packet pack;
-    pack << uint8_t(srv::GAME_FIELD);
+    pack << uint8_t(srv_msg::GAME_FIELD);
 
 }
 
@@ -82,20 +84,20 @@ void ServerApp::init_new_game(uint16_t field_width, uint16_t field_hight, uint32
         player.active = false;
         player.ready = false;
     }
-    this->state = srv::WAITING_NG;
+    this->state = app_state::WAITING_NG;
     sf::Packet pack;
-    pack << uint8_t(srv::NEW_GAME) << field_width << field_hight << mines_total;
+    pack << uint8_t(srv_msg::NEW_GAME) << field_width << field_hight << mines_total;
     send_all(pack);
     cout << "New game inited" << endl;
 }
 
 void ServerApp::set_ready(Player &player) {
-    if (state != srv::NOTINITED)
+    if (state != app_state::NOTINITED)
         player.ready = true;
-    if (state == srv::WAITING_NG)
+    if (state == app_state::WAITING_NG)
         player.active = true;
     sf::Packet pack;
-    pack << srv::PLAYERS;
+    pack << uint8_t(srv_msg::PLAYERS);
     pack << players;
     if (player.cli_sock->send(pack) != sf::Socket::Done)
         cerr << "Error while sending data" << endl;
@@ -109,18 +111,18 @@ void ServerApp::set_name(Player &player, string &player_name) {
 void ServerApp::set_pause() {
     field->set_pause();
     sf::Packet pack;
-    pack << uint8_t(srv::PAUSE) << (field->state == PAUSE);
+    pack << uint8_t(srv_msg::PAUSE) << (field->state == field_state::PAUSE);
     send_all(pack);
     cout << "pause set" << endl;
 }
 
 void ServerApp::open_cell(coords crds) {
-    if (state == srv::WAITING_NG) {
-        state = srv::INGAME;
+    if (state == app_state::WAITING_NG) {
+        state = app_state::INGAME;
     }
     field->open_cell(crds);
-    if (field->state == WIN || field->state == DEFEAT)
-        state = srv::FINISHED;
+    if (field->state == field_state::WIN || field->state == field_state::DEFEAT)
+        state = app_state::FINISHED;
     sf::Packet pack;
     pack_game_state(pack);
     send_all(pack);
@@ -137,17 +139,9 @@ void ServerApp::flag_cell(coords crds) {
 
 void ServerApp::pack_game_state(sf::Packet &pack) {
     pack << uint8_t(field->state);
-    if (field->state != WIN && field->state != DEFEAT) {
-        for (uint16_t x = 0; x < field->field_width; ++x) {
-            for (uint16_t y = 0; y < field->field_hight; ++y) {
-                pack << uint8_t(field->get_cell_condition(coords(x,y)));
-            }
-        }
-    } else {
-        for (uint16_t x = 0; x < field->field_width; ++x) {
-            for (uint16_t y = 0; y < field->field_hight; ++y) {
-                pack << uint8_t(field->get_true_condition(coords(x,y)));
-            }
+    for (uint16_t x = 0; x < field->field_width; ++x) {
+        for (uint16_t y = 0; y < field->field_hight; ++y) {
+            pack << uint8_t(field->get_sprite(coords(x,y), false, coords(0,0)));
         }
     }
 }
@@ -157,36 +151,36 @@ void ServerApp::pack_game_state(sf::Packet &pack) {
 void ServerApp::handle_client_data(Player &player, sf::Packet &pack) {
     uint8_t msg_type;
     pack >> msg_type;
-    switch(cli::msg_type(msg_type)) {
-        case cli::ASK_STATE: {
+    switch(cli_msg(msg_type)) {
+        case cli_msg::ASK_STATE: {
             send_state(player);
             break;
-        } case cli::ASK_FIELD: {
+        } case cli_msg::ASK_FIELD: {
             send_field(player);
             break;
-        } case cli::ASK_NEW_GAME: {
+        } case cli_msg::ASK_NEW_GAME: {
             uint16_t field_width, field_hight, mines_total;
             pack >> field_width >> field_hight >> mines_total;
             init_new_game(field_width, field_hight, mines_total);
             break;
-        } case cli::SET_NAME: {
+        } case cli_msg::SET_NAME: {
             string player_name;
             pack >> player_name;
             cout << player_name << endl;
             set_name(player, player_name);
             break;
-        } case cli::SET_READY: {
+        } case cli_msg::SET_READY: {
             set_ready(player);
             break;
-        } case cli::ASK_PAUSE: {
+        } case cli_msg::ASK_PAUSE: {
             set_pause();
             break;
-        } case cli::OPEN_CELL: {
+        } case cli_msg::OPEN_CELL: {
             coords crds(0,0);
             pack >> crds;
             open_cell(crds);
             break;
-        } case cli::FLAG_CELL: {
+        } case cli_msg::FLAG_CELL: {
             coords crds(0,0);
             pack >> crds;
             flag_cell(crds);

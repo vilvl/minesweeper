@@ -38,8 +38,7 @@ void Field::generate_field(coords start_crds) {
             mns--;
         }
     }
-    this->state = INGAME;
-    this->time_start = std::chrono::steady_clock::now();
+    set_state(field_state::INGAME);
 }
 
 // void Field::generate_field_probabilisticly(coords start_crds) {
@@ -78,10 +77,20 @@ void Field::count_neighbors() {
                 inc_neighbors(coords(j, i));
 }
 
+void Field::set_state(field_state st) {
+    this->state = st;
+    if (state == field_state::WIN || state == field_state::DEFEAT) {
+        ingame_time_total += ingame_time;
+        ingame_time = 0;
+    } else if (state == field_state::INGAME) {
+        this->time_start = std::chrono::steady_clock::now();
+    }
+}
+
 void Field::open_cell_recursive(coords crds, bool first_iter) {
     int res = get_cell(crds).open_cell();
     if (res == -3) {
-        this->state = DEFEAT;
+        set_state(field_state::DEFEAT);
         return;
     }
     if (res == -1 && first_iter)
@@ -94,17 +103,16 @@ void Field::open_cell_recursive(coords crds, bool first_iter) {
 }
 
 void Field::open_cell(coords crds) {
-    if (cells_opened == 0) {
+    if (cells_opened == 0)
         init(crds);
-        this->time_start = std::chrono::steady_clock::now();
-    }
     open_cell_recursive(crds, true);
     check_win_condition();
 }
 
 void Field::open_closed_neighbors(coords crds) {
     // neighbor iterator
-    if (get_cell(crds).state != OPENED || get_cell(crds).neighbors != count_flaged_neighbors(crds))
+    if (get_cell(crds).state != cell_state::OPENED
+    || get_cell(crds).neighbors != count_flaged_neighbors(crds))
         return;
     for (int i = std::max(crds.y - 1, 0); i < std::min(crds.y + 2, field_hight + 0); i++)
         for (int j = std::max(crds.x - 1, 0); j < std::min(crds.x + 2, field_width + 0); j++)
@@ -116,7 +124,8 @@ uint8_t Field::count_flaged_neighbors(coords crds) {
     int counter = 0;
     for (int i = std::max(crds.y - 1, 0); i < std::min(crds.y + 2, field_hight + 0); i++)
         for (int j = std::max(crds.x - 1, 0); j < std::min(crds.x + 2, field_width + 0); j++)
-            if (get_cell(coords(j, i)).state == FLAGGED || get_cell(coords(j, i)).state == OPENED_MINE)
+            if (get_cell(coords(j, i)).state == cell_state::FLAGGED
+            || get_cell(coords(j, i)).state == cell_state::OPENED_MINE)
                 counter++;
     return counter;
 }
@@ -126,7 +135,8 @@ uint8_t Field::count_closed_neighbors(coords crds) {
     int counter = 0;
      for (int i = std::max(crds.y - 1, 0); i < std::min(crds.y + 2, field_hight + 0); i++)
         for (int j = std::max(crds.x - 1, 0); j < std::min(crds.x + 2, field_width + 0); j++)
-            if (get_cell(coords(j, i)).state != OPENED && get_cell(coords(j, i)).state != OPENED_MINE)
+            if (get_cell(coords(j, i)).state != cell_state::OPENED
+            && get_cell(coords(j, i)).state != cell_state::OPENED_MINE)
                 counter++;
     return counter;
 }
@@ -137,8 +147,8 @@ void Field::flag_closed_neighbors(coords crds) {
      for (int i = std::max(crds.y - 1, 0); i < std::min(crds.y + 2, field_hight + 0); i++) {
         for (int j = std::max(crds.x - 1, 0); j < std::min(crds.x + 2, field_width + 0); j++) {
             FieldCell &cell = get_cell(coords(j, i));
-            if (cell.state == CLOSED) {
-                cell.state = FLAGGED;
+            if (cell.state == cell_state::CLOSED) {
+                cell.state = cell_state::FLAGGED;
                 this->flags_total += 1;
             }
         }
@@ -146,30 +156,27 @@ void Field::flag_closed_neighbors(coords crds) {
 }
 
 void Field::set_pause() {
-    if (state == INGAME) {
-        this->state = PAUSE;
-        this->ingame_time_total += ingame_time;
-        this->ingame_time = 0;
-    } else if (state == PAUSE) {
-        this->state = INGAME;
-        this->time_start = std::chrono::steady_clock::now();
+    if (state == field_state::INGAME) {
+        set_state(field_state::PAUSE);
+    } else if (state == field_state::PAUSE) {
+        set_state(field_state::INGAME);
     }
 }
 
 void Field::check_win_condition() {
-    if (state == INGAME)
-        this->state = (mines_total + cells_opened == cells_total ? WIN : INGAME);
+    if (state == field_state::INGAME && (mines_total + cells_opened == cells_total))
+        set_state(field_state::WIN);
 }
 
 void Field::set_flag(coords crds) {
     FieldCell &cell = get_cell(crds);
-    if (cell.state == OPENED) {
+    if (cell.state == cell_state::OPENED) {
         flag_closed_neighbors(crds);
-    } else if (cell.state == CLOSED) {
-        cell.state = FLAGGED;
+    } else if (cell.state == cell_state::CLOSED) {
+        cell.state = cell_state::FLAGGED;
         this->flags_total += 1;
     } else {  // if state == FLAGGED
-        cell.state = CLOSED;
+        cell.state = cell_state::CLOSED;
         this->flags_total -= 1;
     }
 }
@@ -177,27 +184,48 @@ void Field::set_flag(coords crds) {
 cell_condition Field::get_cell_condition(coords crds) {
     FieldCell &cell = get_cell(crds);
     switch (cell.state) {
-        case CLOSED: return UNDEFINED;
-        case FLAGGED: return FLAG;
-        case OPENED: return cell_condition(cell.neighbors);
-        case OPENED_MINE: return EXPLODED;
+        case cell_state::CLOSED: return cell_condition::UNDEFINED;
+        case cell_state::FLAGGED: return cell_condition::FLAG;
+        case cell_state::OPENED: return cell_condition(cell.neighbors);
+        case cell_state::OPENED_MINE: return cell_condition::EXPLODED;
     }
-    return UNDEFINED;
+    return cell_condition::UNDEFINED;
 }
 
 cell_condition Field::get_true_condition(coords crds) {
-    if (state != WIN && state != DEFEAT)
+    if (state != field_state::WIN && state != field_state::DEFEAT)
         return get_cell_condition(crds);
     FieldCell &cell = get_cell(crds);
-    if (cell.state == FLAGGED && !cell.is_mine)
-        return WRONG_FLAG;
-    if (cell.state == OPENED && cell.is_mine)
-        return EXPLODED;
-    if (cell.state == CLOSED && cell.is_mine)
-        return MINE;
+    if (cell.state == cell_state::FLAGGED && !cell.is_mine)
+        return cell_condition::WRONG_FLAG;
+    if (cell.state == cell_state::OPENED && cell.is_mine)
+        return cell_condition::EXPLODED;
+    if (cell.state == cell_state::CLOSED && cell.is_mine)
+        return cell_condition::MINE;
     return get_cell_condition(crds);
 }
 
 bool Field::is_neighbors(coords pos1, coords pos2) {
     return (abs(pos1.x - pos2.x) <= 1 && abs(pos1.y - pos2.y) <= 1);
+}
+
+void Field::upate_time() {
+    if (state == field_state::INGAME)
+        ingame_time = std::chrono::duration_cast<std::chrono::seconds>
+                                (std::chrono::steady_clock::now() - time_start).count();
+}
+
+cell_condition Field::get_sprite(coords cur, bool l_button_is_pressed, coords mouse) {
+    if (state == field_state::WIN || state == field_state::DEFEAT)
+        return get_true_condition(cur);
+
+    cell_condition cond = get_cell_condition(cur);
+    if (l_button_is_pressed && cond == cell_condition::UNDEFINED
+        && ((cur == mouse)
+            || (is_neighbors(cur, mouse)
+                && get_cell_condition(mouse) >= cell_condition(0)
+                && get_cell_condition(mouse) <= cell_condition(8)))) {
+        return cell_condition::E0;
+    }
+    return cond;
 }
