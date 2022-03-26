@@ -90,6 +90,7 @@ void Field::set_state(field_state st) {
 void Field::open_cell_recursive(coords crds, bool first_iter) {
     int res = get_cell(crds).open_cell();
     if (res == -3) {
+        flags_total += 1;
         set_state(field_state::DEFEAT);
         return;
     }

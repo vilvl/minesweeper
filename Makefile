@@ -58,15 +58,14 @@ LIBS		:= $(patsubst %,-L%, $(LIBDIRS:%/=%))
 # define the C source files
 # SOURCES		:= $(wildcard $(patsubst %,%/*.cpp, $(SOURCEDIRS)))
 SOURCES_MAIN	:= 	src/field.cpp \
-				src/mine_sweeper_sfml.cpp \
-				src/graphic.cpp
+				src/graphic.cpp \
+				src/mine_sweeper_standalone.cpp
 
 SOURCES_SERV	:= src/field.cpp \
-				src/shared.cpp \
 				src/mine_server.cpp
 
-SOURCES_CLI 	:= src/field.cpp \
-				src/shared.cpp \
+SOURCES_CLI 	:= src/field_client.cpp \
+				src/graphic.cpp \
 				src/mine_client.cpp
 
 # HEADERS     := $(wildcard $(patsubst %,%/*.hpp, $(SOURCEDIRS)))
@@ -127,6 +126,6 @@ run_serv: $(SERVER)
 	@echo Executing 'run: server' complete!
 
 run_cli: $(CLIENT)
-	./$(OUTPUTCLIENT) 2
+	./$(OUTPUTCLI) 127.0.0.1 5556 client1
 	@echo Executing 'run: client' complete!
 

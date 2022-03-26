@@ -9,7 +9,7 @@ struct Player {
     bool active;
     bool host = false;
     bool ready = false;
-    int32_t score = 0;
+    int16_t score = 0;
     int16_t id = 0;
     string name = "";
     string address = "";
@@ -42,11 +42,11 @@ private:
     void send_state(Player &player);
     void send_field(Player &player);
     void set_ready(Player &player);
-    void init_new_game(uint16_t field_width, uint16_t field_hight, uint32_t mines_total);
     void set_name(Player &player, string &player_name);
     void set_pause();
     void open_cell(coords crds);
     void flag_cell(coords crds);
+    void load_preset(int preset, uint16_t &field_width, uint16_t &field_hight, uint32_t &mines_total);
 
 public:
     vector<Player> players;
@@ -62,6 +62,8 @@ public:
         // listener.~Socket();
         // players.~map<>;
     }
+    void init_new_game(uint16_t field_width, uint16_t field_hight, uint32_t mines_total);
+    void init_new_game(uint8_t preset);
     void main_loop();
 };
 
@@ -80,7 +82,7 @@ bool ServerApp::check_players_ready() {
 
 void ServerApp::send_state(Player &player) {
     sf::Packet pack;
-    pack << uint8_t(srv_msg::GAME_STATE) << uint8_t(this->state);
+    pack << uint8_t(srv_msg::GAME_STATE) << uint16_t(player.id) << uint8_t(this->state);
     if (field)
         pack << field->field_width << field->field_hight << field->mines_total;
     else
@@ -89,25 +91,15 @@ void ServerApp::send_state(Player &player) {
     cout << "State sent" << endl;
 }
 
-void ServerApp::init_new_game(uint16_t field_width, uint16_t field_hight, uint32_t mines_total) {
-    field.reset(new Field(field_width, field_hight, mines_total));
-    for (auto &player : players) {
-        player.active = false;
-        player.ready = false;
-    }
-    this->state = app_state::WAITING_NG;
-    sf::Packet pack;
-    pack << uint8_t(srv_msg::GAME_NEW) << field_width << field_hight << mines_total;
-    send_all(pack);
-    cout << "New game inited" << endl;
-}
-
 void ServerApp::set_ready(Player &player) {
     if (state != app_state::NOTINITED)
         player.ready = true;
     if (state == app_state::WAITING_NG)
         player.active = true;
     cout << "Ready set" << endl;
+    // sf::Packet pack;
+    // pack << "player " << player.name << " is ready";
+    // send_all(pack);
 }
 
 void ServerApp::set_name(Player &player, string &player_name) {
@@ -130,7 +122,9 @@ void ServerApp::open_cell(coords crds) {
     if (state == app_state::WAITING_NG && check_players_ready()) {
         state = app_state::INGAME;
         sf::Packet pack;
-        pack << uint8_t(srv_msg::GAME_STARTED) << players;
+        pack << uint8_t(srv_msg::GAME_STARTED) << uint8_t(players.size());
+        for (auto &player : players)
+            pack << player.id << player.name;
         send_all(pack);
     } if (state != app_state::INGAME) {
         return;
@@ -150,9 +144,11 @@ void ServerApp::flag_cell(coords crds) {
 
 void ServerApp::send_field(Player &player) {
     // msg_type << field_state << time << field << score
+    field->upate_time();
     sf::Packet pack;
     pack << uint8_t(srv_msg::GAME_FIELD);
     pack << uint8_t(field->state);
+    pack << uint32_t(field->flags_total);
     pack << uint32_t(field->ingame_time_total + field->ingame_time);
     for (uint16_t x = 0; x < field->field_width; ++x) {
         for (uint16_t y = 0; y < field->field_hight; ++y) {
@@ -160,7 +156,8 @@ void ServerApp::send_field(Player &player) {
         }
     }
     pack << players;
-    cout << "field sent" << endl;
+    send_to_player(player, pack);
+    // cout << "field sent" << endl;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -175,7 +172,12 @@ void ServerApp::handle_client_data(Player &player, sf::Packet &pack) {
         } case cli_msg::ASK_FIELD: {
             send_field(player);
             break;
-        } case cli_msg::ASK_NEW_GAME: {
+        } case cli_msg::ASK_NEW_GAME_PRESET: {
+            uint8_t preset;
+            pack >> preset;
+            init_new_game(preset);
+            break;
+        } case cli_msg::ASK_NEW_GAME_PARAMS: {
             uint16_t field_width, field_hight, mines_total;
             pack >> field_width >> field_hight >> mines_total;
             init_new_game(field_width, field_hight, mines_total);
@@ -225,7 +227,7 @@ void ServerApp::handle_new_connection() {
 
 void ServerApp::send_all(sf::Packet &pack) {
     for (auto &player : players) {
-        if (player.ready && player.cli_sock->send(pack) != sf::Socket::Done)
+        if (player.cli_sock->send(pack) != sf::Socket::Done)
             cerr << "Error while sending data" << endl;
     }
 }
@@ -233,6 +235,49 @@ void ServerApp::send_all(sf::Packet &pack) {
 void ServerApp::send_to_player(Player &player, sf::Packet &pack) {
     if (player.cli_sock->send(pack) != sf::Socket::Done)
         cerr << "Error while sending data" << endl;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+void ServerApp::load_preset(int preset, uint16_t &field_width, uint16_t &field_hight, uint32_t &mines_total) {
+    switch (preset) {
+        case 1: {
+            field_width = 9;
+            field_hight = 9;
+            mines_total = 10;
+            break;
+        }
+        case 2: {
+            field_width = 16;
+            field_hight = 16;
+            mines_total = 40;
+            break;
+        }
+        case 3:
+            field_width = 30;
+            field_hight = 16;
+            mines_total = 99;
+            break;
+    }
+}
+
+void ServerApp::init_new_game(uint16_t field_width, uint16_t field_hight, uint32_t mines_total) {
+    field.reset(new Field(field_width, field_hight, mines_total));
+    for (auto &player : players) {
+        player.active = false;
+        player.ready = false;
+    }
+    this->state = app_state::WAITING_NG;
+    sf::Packet pack;
+    pack << uint8_t(srv_msg::GAME_NEW) << field_width << field_hight << mines_total;
+    send_all(pack);
+    cout << "New game inited" << endl;
+}
+
+void ServerApp::init_new_game(uint8_t preset) {
+    uint16_t field_width, field_hight;
+    uint32_t mines_total;
+    load_preset(preset, field_width, field_hight, mines_total);
+    init_new_game(field_width, field_hight, mines_total);
 }
 
 void ServerApp::main_loop() {
@@ -298,6 +343,7 @@ int main(int argc, char *argv[]) {
     // sf::IpAddress ip_address = sf::IpAddress::Any;
     parse_args(argc, argv, port);
     ServerApp app(port);
-
+    // NOTINITED is not possible for client
+    app.init_new_game(2);
     app.main_loop();
 }

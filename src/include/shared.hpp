@@ -18,7 +18,8 @@ inline sf::Packet& operator >>(sf::Packet& packet, coords& crds) {
 enum class cli_msg {
     ASK_STATE,      //
     ASK_FIELD,      //
-    ASK_NEW_GAME,   //
+    ASK_NEW_GAME_PRESET,   // + preset
+    ASK_NEW_GAME_PARAMS,   // + params
     ASK_PAUSE,      //
     SET_READY,      //
     SET_NAME,       // + name
@@ -27,13 +28,13 @@ enum class cli_msg {
 };
 
 enum class srv_msg {
-    GAME_STATE,     // state
+    GAME_STATE,     // app_state
     GAME_NEW,       // + field_width + field_hight + mine_counter
     GAME_STARTED,   // players
-    GAME_FIELD,     // field
-    GAME_END_WIN,        // + field_state
-    GAME_END_DEFEAT,     // + field_state
-    PLAYER_DISCONNECTED, // + id
+    GAME_FIELD,     // field_state
+    // GAME_END_WIN,        // + field_state
+    // GAME_END_DEFEAT,     // + field_state
+    // PLAYER_DISCONNECTED, // + id
     TEXT_MSG,       // + msg
 };
 
