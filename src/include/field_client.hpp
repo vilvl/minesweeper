@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 struct PlayerCli {
+    bool active;
     uint16_t id;
     uint32_t score = 0;
     std::string name;
@@ -39,4 +40,3 @@ public:
 
     void update_time();
 };
-

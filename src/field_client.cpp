@@ -46,9 +46,12 @@ void FieldCli::update(sf::Packet pack) {
     pack >> player_counter;
     for (uint8_t i = 0; i < player_counter; ++i){
         int16_t id, score;
-        pack >> id >> score;
-        if (players.count(id) != 0)
+        bool active;
+        pack >> id >> score >> active;
+        if (players.count(id) != 0) {
             players.at(id).score = score;
+            players.at(id).active = active;
+        }
     }
 }
 

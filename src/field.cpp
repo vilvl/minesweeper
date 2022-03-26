@@ -79,7 +79,7 @@ void Field::count_neighbors() {
 
 void Field::set_state(field_state st) {
     this->state = st;
-    if (state == field_state::WIN || state == field_state::DEFEAT) {
+    if (state == field_state::WIN || state == field_state::DEFEAT || state == field_state::PAUSE) {
         ingame_time_total += ingame_time;
         ingame_time = 0;
     } else if (state == field_state::INGAME) {

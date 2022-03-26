@@ -11,8 +11,15 @@ void Graphic::init_window(int field_width, int field_hight) {
     this->field_w = field_width * cell_size;
     this->field_h = field_hight * cell_size;
 
-    window.create(VideoMode(field_w, interface_shift + field_h), "MineSweeper");
-    window.setFramerateLimit(framerate);
+    if (window.isOpen()) {
+        Vector2i pos(window.getPosition());
+        window.create(VideoMode(field_w, interface_shift + field_h), "MineSweeper");
+        window.setFramerateLimit(framerate);
+        window.setPosition(pos);
+    } else {
+        window.create(VideoMode(field_w, interface_shift + field_h), "MineSweeper");
+        window.setFramerateLimit(framerate);
+    }
 }
 
 void Graphic::set_sprites(std::string sprite_path) {
@@ -32,18 +39,26 @@ void Graphic::set_font(std::string font_path) {
     time_text.setFont(font);
     mine_text.setFont(font);
     state_text.setFont(font);
+    score_text.setFont(font);
+    my_score_text.setFont(font);
 
     time_text.setFillColor(Color::Red);
     mine_text.setFillColor(Color::Red);
     state_text.setFillColor(Color::Red);
+    score_text.setFillColor(Color::Red);
+    my_score_text.setFillColor(Color::Green);
 
     time_text.setStyle(sf::Text::Bold);
     mine_text.setStyle(sf::Text::Bold);
     state_text.setStyle(sf::Text::Bold);
+    score_text.setStyle(sf::Text::Bold);
+    my_score_text.setStyle(sf::Text::Bold);
 
     time_text.setCharacterSize(little_font_size);
     mine_text.setCharacterSize(little_font_size);
     state_text.setCharacterSize(big_font_size);
+    score_text.setCharacterSize(score_font_size);
+    my_score_text.setCharacterSize(score_font_size);
 }
 
 void Graphic::draw_cell(int x, int y, int sprite) {
@@ -66,4 +81,12 @@ void Graphic::draw_interface(std::string mines, std::string time, std::string st
         state_text.setPosition(Vector2f(field_w / 2 - state.length() * big_font_size / 2.5, (interface_shift - big_font_size) / 2.));
         window.draw(state_text);
     }
+}
+
+void Graphic::draw_score(std::string &name, int16_t score, uint pos, bool its_me) {
+    sf::Text &box = (its_me ? my_score_text : score_text);
+
+    box.setString(name + ": " + std::to_string(score));
+    box.setPosition(Vector2f(interface_shift + field_h + (score_font_size + 2) * pos, (interface_shift - little_font_size) / 2.));
+    window.draw(box);
 }

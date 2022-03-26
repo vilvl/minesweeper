@@ -1,7 +1,6 @@
 #include "include/shared.hpp"
 #include "include/field.hpp"
 
-
 using namespace std;
 
 struct Player {
@@ -24,7 +23,7 @@ int16_t Player::curr_id = 0;
 inline sf::Packet& operator<<(sf::Packet &pack, vector<Player> &players) {
     pack << uint8_t(players.size());
     for (auto &player : players) {
-        pack << player.id << player.score;  // << player.name;
+        pack << player.id << player.score << player.active;  // << player.name;
     }
     return pack;
 }
@@ -44,8 +43,8 @@ private:
     void set_ready(Player &player);
     void set_name(Player &player, string &player_name);
     void set_pause();
-    void open_cell(coords crds);
-    void flag_cell(coords crds);
+    void open_cell(coords crds, Player &player);
+    void flag_cell(coords crds, Player &player);
     void load_preset(int preset, uint16_t &field_width, uint16_t &field_hight, uint32_t &mines_total);
 
 public:
@@ -112,13 +111,13 @@ void ServerApp::set_pause() {
         state = app_state::PAUSE;
         field->set_pause();
     } else if (state == app_state::PAUSE) {
-        state = app_state::PAUSE;
+        state = app_state::INGAME;
         field->set_pause();
     }
     cout << "pause set" << endl;
 }
 
-void ServerApp::open_cell(coords crds) {
+void ServerApp::open_cell(coords crds, Player &player) {
     if (state == app_state::WAITING_NG && check_players_ready()) {
         state = app_state::INGAME;
         sf::Packet pack;
@@ -126,17 +125,26 @@ void ServerApp::open_cell(coords crds) {
         for (auto &player : players)
             pack << player.id << player.name;
         send_all(pack);
-    } if (state != app_state::INGAME) {
+    } if (state != app_state::INGAME || !player.active) {
         return;
     }
     field->open_cell(crds);
+    if (field->state != field_state::DEFEAT) {
+        player.score += 1;
+    } else {
+        player.score -= 10;
+        player.active = false;
+        for (auto &p : players)
+            if (p.active)
+                field->set_state(field_state::INGAME);
+    }
     if (field->state == field_state::WIN || field->state == field_state::DEFEAT)
         state = app_state::FINISHED;
     cout << "cell opened: " << crds.x << ", " << crds.y << endl;
 }
 
-void ServerApp::flag_cell(coords crds) {
-    if (state != app_state::INGAME)
+void ServerApp::flag_cell(coords crds, Player &player) {
+    if (state != app_state::INGAME || !player.active)
         return;
     field->set_flag(crds);
     cout << "flag set: " << crds.x << ", " << crds.y << endl;
@@ -197,12 +205,12 @@ void ServerApp::handle_client_data(Player &player, sf::Packet &pack) {
         } case cli_msg::OPEN_CELL: {
             coords crds(0,0);
             pack >> crds;
-            open_cell(crds);
+            open_cell(crds, player);
             break;
         } case cli_msg::FLAG_CELL: {
             coords crds(0,0);
             pack >> crds;
-            flag_cell(crds);
+            flag_cell(crds, player);
             break;
         }
     }
@@ -227,6 +235,8 @@ void ServerApp::handle_new_connection() {
 
 void ServerApp::send_all(sf::Packet &pack) {
     for (auto &player : players) {
+        if (!player.ready)
+            continue;
         if (player.cli_sock->send(pack) != sf::Socket::Done)
             cerr << "Error while sending data" << endl;
     }
@@ -262,15 +272,15 @@ void ServerApp::load_preset(int preset, uint16_t &field_width, uint16_t &field_h
 
 void ServerApp::init_new_game(uint16_t field_width, uint16_t field_hight, uint32_t mines_total) {
     field.reset(new Field(field_width, field_hight, mines_total));
-    for (auto &player : players) {
-        player.active = false;
-        player.ready = false;
-    }
     this->state = app_state::WAITING_NG;
     sf::Packet pack;
     pack << uint8_t(srv_msg::GAME_NEW) << field_width << field_hight << mines_total;
     send_all(pack);
     cout << "New game inited" << endl;
+    for (auto &player : players) {
+        player.active = false;
+        player.ready = false;
+    }
 }
 
 void ServerApp::init_new_game(uint8_t preset) {

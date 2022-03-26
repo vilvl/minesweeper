@@ -35,7 +35,6 @@ private:
     void inc_neighbors(coords crds);
 
     void check_win_condition();
-    void set_state(field_state st);
 
     FieldCell &get_cell(coords crds);
     cell_condition get_cell_condition(coords crds);
@@ -53,6 +52,7 @@ public:
     ~Field();
     cell_condition get_sprite(coords cur, bool l_button_is_pressed, coords mouse);
     void open_cell(coords crds);
+    void set_state(field_state st);
     void set_flag(coords crds);
     void set_pause();
     void upate_time();
