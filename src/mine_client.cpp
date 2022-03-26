@@ -254,12 +254,12 @@ void ClientApp::handle_keyboard_event(Event &event) {
 void ClientApp::display_score() {
     std::string state_text;
     switch(field->state) {
-        case field_state::WIN:       state_text = "GRAZ";         break;
-        case field_state::DEFEAT:    state_text = "YOU LOST";     break;
-        case field_state::PAUSE:     state_text = "PAUSE";        break;
-        case field_state::NEWGAME:   state_text = "CLICK ON THE FIELD TO START";  break;
-        case field_state::INGAME:    state_text = "";             break;
-        default:        state_text = "WTF ITS DISPLAYED???";     break;
+        case field_state::WIN:       state_text = "GRAZ";           break;
+        case field_state::DEFEAT:    state_text = "YOU LOST";       break;
+        case field_state::PAUSE:     state_text = "PAUSE";          break;
+        case field_state::NEWGAME:   state_text = "CLICK TO START"; break;
+        case field_state::INGAME:    state_text = "";               break;
+        default:        state_text = "WTF ITS DISPLAYED???";
     }
     graph->draw_interface(
             std::to_string(field->mines_total - field->flags_total),

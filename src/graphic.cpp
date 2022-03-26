@@ -78,7 +78,12 @@ void Graphic::draw_interface(std::string mines, std::string time, std::string st
 
     if (!state.empty()) {
         state_text.setString(state);
-        state_text.setPosition(Vector2f(field_w / 2 - state.length() * big_font_size / 2.5, (interface_shift - big_font_size) / 2.));
+        //center text
+        sf::FloatRect textRect = state_text.getLocalBounds();
+        state_text.setOrigin(textRect.left + textRect.width/2.0f,
+               textRect.top  + textRect.height/2.0f);
+        state_text.setPosition(sf::Vector2f(window.getView().getCenter()));
+        // state_text.setPosition(Vector2f(field_w / 2 - state.length() * big_font_size / 2.5, (interface_shift + field_h) / 2.));
         window.draw(state_text);
     }
 }

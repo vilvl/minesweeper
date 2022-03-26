@@ -24,7 +24,7 @@ public:
     int framerate = 30;
 
     int little_font_size = 18;
-    int big_font_size = 26;
+    int big_font_size = 36;
     int score_font_size = 10;
 
     int cell_size = 32;
