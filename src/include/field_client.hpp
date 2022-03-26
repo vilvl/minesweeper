@@ -17,9 +17,9 @@ struct PlayerCli {
 struct FieldCli {
 private:
     std::vector<std::vector<cell_condition>> cells;
-    std::unordered_map<uint16_t, PlayerCli> players;
 
 public:
+    std::unordered_map<uint16_t, PlayerCli> players;
     uint16_t field_width;
     uint16_t field_hight;
     uint32_t cells_total;

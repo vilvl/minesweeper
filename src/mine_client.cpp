@@ -266,6 +266,11 @@ void ClientApp::display_score() {
             std::to_string(field->ingame_time_total + field->ingame_time),
             state_text
     );
+    uint counter = 0;
+    for (auto const &it : field->players) {
+        auto &player = it.second;
+        graph->draw_score(player.name, player.score, counter++, player.its_me, player.active);
+    }
 }
 
 void ClientApp::main_loop() {
@@ -291,7 +296,8 @@ void ClientApp::main_loop() {
         while (graph->window.pollEvent(event)) {
             if (event.type == Event::Closed)
                 graph->window.close();
-            if (scaled_mouse_pos.y >= graph->interface_shift) {
+            if (scaled_mouse_pos.y >= graph->interface_shift
+            && scaled_mouse_pos.y <= graph->interface_shift + graph->field_h) {
                 handle_field_events(event, crds);
             } else {
                 handle_interface_events(event, scaled_mouse_pos);

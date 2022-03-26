@@ -76,4 +76,3 @@ void FieldCli::update_time() {
         ingame_time = std::chrono::duration_cast<std::chrono::seconds>
                                 (std::chrono::steady_clock::now() - time_start).count();
 }
-

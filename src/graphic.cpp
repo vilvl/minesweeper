@@ -13,11 +13,11 @@ void Graphic::init_window(int field_width, int field_hight) {
 
     if (window.isOpen()) {
         Vector2i pos(window.getPosition());
-        window.create(VideoMode(field_w, interface_shift + field_h), "MineSweeper");
+        window.create(VideoMode(field_w, interface_shift + field_h + score_shift), "MineSweeper");
         window.setFramerateLimit(framerate);
         window.setPosition(pos);
     } else {
-        window.create(VideoMode(field_w, interface_shift + field_h), "MineSweeper");
+        window.create(VideoMode(field_w, interface_shift + field_h + score_shift), "MineSweeper");
         window.setFramerateLimit(framerate);
     }
 }
@@ -40,25 +40,21 @@ void Graphic::set_font(std::string font_path) {
     mine_text.setFont(font);
     state_text.setFont(font);
     score_text.setFont(font);
-    my_score_text.setFont(font);
 
     time_text.setFillColor(Color::Red);
     mine_text.setFillColor(Color::Red);
     state_text.setFillColor(Color::Red);
-    score_text.setFillColor(Color::Red);
-    my_score_text.setFillColor(Color::Green);
+    // score_text.setFillColor(Color::Red);
 
     time_text.setStyle(sf::Text::Bold);
     mine_text.setStyle(sf::Text::Bold);
     state_text.setStyle(sf::Text::Bold);
     score_text.setStyle(sf::Text::Bold);
-    my_score_text.setStyle(sf::Text::Bold);
 
     time_text.setCharacterSize(little_font_size);
     mine_text.setCharacterSize(little_font_size);
     state_text.setCharacterSize(big_font_size);
     score_text.setCharacterSize(score_font_size);
-    my_score_text.setCharacterSize(score_font_size);
 }
 
 void Graphic::draw_cell(int x, int y, int sprite) {
@@ -88,10 +84,15 @@ void Graphic::draw_interface(std::string mines, std::string time, std::string st
     }
 }
 
-void Graphic::draw_score(std::string &name, int16_t score, uint pos, bool its_me) {
-    sf::Text &box = (its_me ? my_score_text : score_text);
+void Graphic::draw_score(const std::string name, const int16_t score, const uint pos, const bool its_me, const bool active) {
+    if (!active)
+        score_text.setFillColor(sf::Color::Red);
+    else if (its_me)
+        score_text.setFillColor(sf::Color::Magenta);
+    else
+        score_text.setFillColor(sf::Color::Blue);
 
-    box.setString(name + ": " + std::to_string(score));
-    box.setPosition(Vector2f(interface_shift + field_h + (score_font_size + 2) * pos, (interface_shift - little_font_size) / 2.));
-    window.draw(box);
+    score_text.setString(name + ": " + std::to_string(score));
+    score_text.setPosition(Vector2f(cell_size / 2., interface_shift + field_h + (score_font_size + 4) * pos));
+    window.draw(score_text);
 }

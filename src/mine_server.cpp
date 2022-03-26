@@ -5,7 +5,7 @@ using namespace std;
 
 struct Player {
     static int16_t curr_id;
-    bool active;
+    bool active = false;
     bool host = false;
     bool ready = false;
     int16_t score = 0;

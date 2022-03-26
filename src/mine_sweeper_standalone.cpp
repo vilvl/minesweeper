@@ -81,7 +81,8 @@ void StandAloneApp::main_loop() {
         while (graph->window.pollEvent(event)) {
             if (event.type == Event::Closed)
                 graph->window.close();
-            if (scaled_mouse_pos.y >= graph->interface_shift) {
+            if (scaled_mouse_pos.y >= graph->interface_shift
+            && scaled_mouse_pos.y <= graph->interface_shift + graph->field_h) {
                 handle_field_events(event, crds);
             } else {
                 handle_interface_events(event, scaled_mouse_pos);

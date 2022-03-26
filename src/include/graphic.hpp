@@ -19,16 +19,16 @@ public:
     sf::Text mine_text;
     sf::Text state_text;
     sf::Text score_text;
-    sf::Text my_score_text;
 
     int framerate = 30;
 
     int little_font_size = 18;
     int big_font_size = 36;
-    int score_font_size = 10;
+    int score_font_size = 14;
 
     int cell_size = 32;
     int interface_shift = 64;
+    int score_shift = 3 * (score_font_size + 4);
 
     int field_w;
     int field_h;
@@ -41,5 +41,5 @@ public:
     void draw_cell(int x, int y, int sprite);
     Graphic(std::string font_path, std::string sprites_path);
     void draw_interface(std::string mines, std::string time, std::string state);
-    void draw_score(std::string &name, int16_t score, uint pos, bool its_me);
+    void draw_score(const std::string name, const int16_t score, const uint pos, const bool its_me, const bool active);
 };
