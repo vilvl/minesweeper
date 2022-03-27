@@ -1,7 +1,7 @@
 # A Minesweeper clone in C++ with SFML
 
 This is my Minesweeper game made to learn basics of C++. Also I'm studying Hebrew right now, that is why numbers are replaced with Hebrew letters.
-Game can be run in 2 modes: standalone and client-server.
+The game can be run in 2 modes: standalone and client-server.
 # ![sample-gif](images/sample.gif)
 
 ## Building
