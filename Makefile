@@ -28,7 +28,7 @@ INCLUDE	:= src/include
 LIB		:= lib
 
 ifeq ($(OS),Windows_NT)
-	MAIN	    := main.exe
+	MAIN	    := standalone.exe
 	CLIENT		:= client.exe
 	SERVER		:= server.exe
 	SOURCEDIRS	:= $(SRC)
@@ -38,7 +38,7 @@ ifeq ($(OS),Windows_NT)
 	RM			:= del /q /f
 	MD	        := mkdir
 else
-	MAIN	    := main
+	MAIN	    := standalone
 	CLIENT		:= client
 	SERVER 		:= server
 	SOURCEDIRS	:= $(shell find $(SRC) -type d)
@@ -117,9 +117,9 @@ clean:
 	$(RM) $(call FIXPATH,$(OBJECTS_SERV))
 	@echo Cleanup complete!
 
-run: $(MAIN)
+run_single: $(MAIN)
 	./$(OUTPUTMAIN) 3
-	@echo Executing 'run: main' complete!
+	@echo Executing 'run: standalone' complete!
 
 run_serv: $(SERVER)
 	./$(OUTPUTSERV) 5556
