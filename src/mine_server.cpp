@@ -29,7 +29,7 @@ inline sf::Packet& operator<<(sf::Packet &pack, vector<Player> &players) {
 }
 
 class ServerApp {
-private:
+ private:
     bool unblock_sockets;
     void send_all(sf::Packet &pack);
     void send_to_player(Player &player, sf::Packet &pack);
@@ -46,14 +46,14 @@ private:
     void open_cell(coords crds, Player &player);
     void flag_cell(coords crds, Player &player);
 
-public:
+ public:
     vector<Player> players;
     sf::TcpListener listener;
     sf::SocketSelector selector;
     unique_ptr<Field> field = nullptr;
     app_state state = app_state::NOTINITED;
 
-public:
+ public:
     ServerApp(u_int port, sf::IpAddress ip = sf::IpAddress::Any,
               bool unblock_sockets = false);
     ~ServerApp() {
@@ -124,7 +124,8 @@ void ServerApp::open_cell(coords crds, Player &player) {
         for (auto &player : players)
             pack << player.id << player.name;
         send_all(pack);
-    } if (state != app_state::INGAME || !player.active) {
+    }
+    if (state != app_state::INGAME || !player.active) {
         return;
     }
     field->open_cell(crds, player.score);
@@ -156,7 +157,7 @@ void ServerApp::send_field(Player &player) {
     pack << uint32_t(field->ingame_time_total + field->ingame_time);
     for (uint16_t x = 0; x < field->field_width; ++x) {
         for (uint16_t y = 0; y < field->field_hight; ++y) {
-            pack << uint8_t(field->get_sprite(coords(x,y), false, coords(0,0)));
+            pack << uint8_t(field->get_sprite(coords(x, y), false, coords(0, 0)));
         }
     }
     pack << players;
@@ -169,7 +170,7 @@ void ServerApp::send_field(Player &player) {
 void ServerApp::handle_client_data(Player &player, sf::Packet &pack) {
     uint8_t msg_type;
     pack >> msg_type;
-    switch(cli_msg(msg_type)) {
+    switch (cli_msg(msg_type)) {
         case cli_msg::ASK_STATE: {
             send_state(player);
             break;
@@ -199,12 +200,12 @@ void ServerApp::handle_client_data(Player &player, sf::Packet &pack) {
             set_pause();
             break;
         } case cli_msg::OPEN_CELL: {
-            coords crds(0,0);
+            coords crds(0, 0);
             pack >> crds;
             open_cell(crds, player);
             break;
         } case cli_msg::FLAG_CELL: {
-            coords crds(0,0);
+            coords crds(0, 0);
             pack >> crds;
             flag_cell(crds, player);
             break;
@@ -219,7 +220,8 @@ void ServerApp::handle_new_connection() {
     players.emplace_back();
     Player &player = players.back();
     if (listener.accept(*player.cli_sock) == sf::Socket::Done) {
-        player.address = player.cli_sock->getRemoteAddress().toString() + ":" + to_string(player.cli_sock->getRemotePort());
+        player.address = player.cli_sock->getRemoteAddress().toString()
+                + ":" + to_string(player.cli_sock->getRemotePort());
         player.cli_sock->setBlocking(unblock_sockets);
         selector.add(*player.cli_sock);
         cout << "New connection: " << player.address << endl;
@@ -263,7 +265,8 @@ void ServerApp::init_new_game(uint8_t preset) {
     field.reset(new Field(preset));
     this->state = app_state::WAITING_NG;
     sf::Packet pack;
-    pack << uint8_t(srv_msg::GAME_NEW) << field->field_width << field->field_hight << field->mines_total;
+    pack << uint8_t(srv_msg::GAME_NEW)
+            << field->field_width << field->field_hight << field->mines_total;
     send_all(pack);
     cout << "New game inited" << endl;
     for (auto &player : players) {

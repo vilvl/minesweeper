@@ -1,13 +1,13 @@
+#include <memory>
+
 #include "include/field_client.hpp"
 #include "include/graphic.hpp"
 #include "include/shared.hpp"
 
-#include <memory>
-
 using namespace sf;
 
 class ClientApp {
-public:
+ public:
     ClientApp(sf::IpAddress host, u_int port, std::string client_name,
                 std::string font_path, std::string sprites_path, std::string buttons_path);
 
@@ -46,7 +46,7 @@ public:
 };
 
 
-///////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
 #pragma region inet
 
 void ClientApp::init_connection(sf::IpAddress host, uint port, std::string &name) {
@@ -182,7 +182,7 @@ void ClientApp::handle_game_field(sf::Packet &pack) {
     field->update(pack);
 }
 
-void ClientApp::handle_game_started(sf::Packet &pack){
+void ClientApp::handle_game_started(sf::Packet &pack) {
     field->init_players(pack, id);
 }
 
@@ -191,7 +191,7 @@ void ClientApp::handle_server_data() {
     recv_pack(pack);
     uint8_t msg;
     pack >> msg;
-    switch(srv_msg(msg)) {
+    switch (srv_msg(msg)) {
         case srv_msg::GAME_STATE: {
             handle_game_state(pack);
             break;
@@ -257,8 +257,7 @@ void ClientApp::display_score(Vector2f mouse_pos) {
             (field->mines_total - field->flags_total),
             (field->ingame_time_total + field->ingame_time),
             field->get_state_text(),
-            mouse_pos
-    );
+            mouse_pos);
     uint counter = 0;
     for (auto const &it : field->players) {
         auto &player = it.second;
@@ -269,24 +268,25 @@ void ClientApp::display_score(Vector2f mouse_pos) {
 void ClientApp::main_loop() {
     bool is_inside_field = false;
     while (graph->window.isOpen()) {
-
         ask_field();
         while (selector.wait(sf::milliseconds(10)) && selector.isReady(sock))
             handle_server_data();
 
-        Vector2f scaled_mouse_pos = graph->window.mapPixelToCoords(Mouse::getPosition(graph->window));
-        coords crds(scaled_mouse_pos.x / graph->cell_size, (scaled_mouse_pos.y - graph->interface_shift) / graph->cell_size);
+        Vector2f scaled_mouse_pos =
+                graph->window.mapPixelToCoords(Mouse::getPosition(graph->window));
+        coords crds(scaled_mouse_pos.x / graph->cell_size,
+                (scaled_mouse_pos.y - graph->interface_shift) / graph->cell_size);
         graph->window.clear(Color::White);
-		for (int x = 0; x < field->field_width; x++) {
-			for (int y = 0; y < field->field_hight; y++) {
+        for (int x = 0; x < field->field_width; x++) {
+            for (int y = 0; y < field->field_hight; y++) {
                 cell_condition sprite = field->get_sprite(coords(x, y),
                     is_inside_field && sf::Mouse::isButtonPressed(sf::Mouse::Button::Left), crds);
-                graph->draw_cell(x, y, int(sprite));
-			}
+                graph->draw_cell(x, y, static_cast<int>(sprite));
+            }
         }
         field->update_time();
         display_score(scaled_mouse_pos);
-		graph->window.display();
+        graph->window.display();
 
         Event event;
         while (graph->window.pollEvent(event)) {
@@ -308,12 +308,14 @@ void ClientApp::main_loop() {
 #pragma endregion
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-void parse_args(int argc, char *argv[], sf::IpAddress &host, u_int &port, std::string &client_name) {
+void parse_args(int argc, char *argv[],
+        sf::IpAddress &host, u_int &port, std::string &client_name) {
     if (!(argc == 4
             && (host = argv[1]) != sf::IpAddress::None
             && (port = atoi(argv[2])) && (port > 0) && port <= (MAX_PORT)
             && !(client_name = argv[3]).empty())) {
-        std::cerr << "ERROR: cmd arguments should be host-address, port and client-name separated with spaces" << std::endl;
+        std::cerr << "ERROR: cmd arguments should be host-address, "
+                << "port and client-name separated with spaces" << std::endl;
         exit(-1);
     }
 }

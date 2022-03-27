@@ -4,19 +4,18 @@
 #include "field_base.hpp"
 
 #include <algorithm>  // min & max
-#include <ctime>      // time
-#include <cstdlib>    // srand
+#include <random>
 #include <memory>
 #include <vector>
 
 class Field : public FieldBase {
-private:
+ private:
     std::unique_ptr<std::vector<std::vector<FieldCell>>> cells;
 
-public:
+ public:
     uint32_t cells_opened = 0;
 
-private:
+ private:
     void init(coords crds);
     void generate_field(coords start_crds);
     void count_neighbors();
@@ -34,11 +33,12 @@ private:
     uint8_t count_closed_neighbors(coords crds);
     uint8_t count_flaged_neighbors(coords crds);
 
-    void load_preset(int preset, uint16_t &field_width, uint16_t &field_hight, uint32_t &mines_total);
+    void load_preset(int preset, uint16_t &field_width,
+                uint16_t &field_hight, uint32_t &mines_total);
 
-public:
+ public:
     Field(uint16_t field_width, uint16_t field_hight, uint32_t mines_total);
-    Field(uint8_t preset);
+    explicit Field(uint8_t preset);
     cell_condition get_sprite(coords cur, bool l_button_is_pressed, coords mouse);
     void open_cell(coords crds, int16_t &score);
     void set_state(field_state st);

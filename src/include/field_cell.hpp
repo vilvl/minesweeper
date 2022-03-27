@@ -10,20 +10,19 @@ enum class cell_state{
 
 
 class FieldCell {
-private:
-public:
+ public:
     cell_state state = cell_state::CLOSED;
     bool is_mine;
     int neighbors = 0;
 
-public:
+ public:
     void set_mine(bool state) {
         this->is_mine = state;
-    };
+    }
     void set_flag() {
         if (state != cell_state::OPENED)
             state = (state == cell_state::FLAGGED ? cell_state::CLOSED : cell_state::FLAGGED);
-    };
+    }
     int open_cell() {
         if (state == cell_state::OPENED || state == cell_state::OPENED_MINE)
             return -1;
@@ -36,5 +35,5 @@ public:
             state = cell_state::OPENED;
             return neighbors;
         }
-    };
+    }
 };

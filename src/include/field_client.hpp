@@ -1,10 +1,11 @@
 #pragma once
 
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 #include "shared.hpp"
 #include "field_base.hpp"
-
-#include <unordered_map>
 
 struct PlayerCli {
     bool active;
@@ -12,17 +13,17 @@ struct PlayerCli {
     uint32_t score = 0;
     std::string name;
     bool its_me = false;
-    PlayerCli(uint16_t id, std::string name, bool its_me): id(id), name(name), its_me(its_me) {};
+    PlayerCli(uint16_t id, std::string name, bool its_me): id(id), name(name), its_me(its_me) {}
 };
 
 class FieldCli : public FieldBase {
-private:
+ private:
     std::vector<std::vector<cell_condition>> cells;
 
-public:
+ public:
     std::unordered_map<uint16_t, PlayerCli> players;
 
-public:
+ public:
     FieldCli(uint16_t field_width, uint16_t field_hight, uint32_t mines_total);
     cell_condition get_cell_condition(coords crds);
     cell_condition get_sprite(coords cur, bool l_button_is_pressed, coords mouse);

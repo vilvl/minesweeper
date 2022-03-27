@@ -1,12 +1,13 @@
+#include <memory>
+
 #include "include/field.hpp"
 #include "include/graphic.hpp"
 
-#include <memory>
 
 using namespace sf;
 
 class StandAloneApp {
-private:
+ private:
     std::unique_ptr<Field> field;
     std::unique_ptr<Graphic> graph;
     int16_t score = 0;
@@ -18,14 +19,16 @@ private:
     void init_ng(uint8_t preset);
 
 
-public:
+ public:
     StandAloneApp(std::string font_path, std::string texture_path, std::string buttons_path);
     void init(uint16_t field_width, uint16_t field_hight, uint32_t mines_total);
     void main_loop();
 };
 
 
-StandAloneApp::StandAloneApp(std::string font_path, std::string texture_path, std::string buttons_path) {
+StandAloneApp::StandAloneApp(std::string font_path,
+                            std::string texture_path,
+                            std::string buttons_path) {
     graph.reset(new Graphic(font_path, texture_path, buttons_path));
 }
 
@@ -77,17 +80,18 @@ void StandAloneApp::display_score(Vector2f mouse) {
             (field->mines_total - field->flags_total),
             (field->ingame_time_total + field->ingame_time),
             field->get_state_text(),
-            mouse
-    );
+            mouse);
     graph->draw_score("Sapper", score, 0, true, field->state != field_state::DEFEAT);
 }
 
 void StandAloneApp::main_loop() {
     bool is_inside_field = false;
     while (graph->window.isOpen()) {
-		// Vector2i mouse_pos = Mouse::getPosition(app);
-        Vector2f scaled_mouse_pos = graph->window.mapPixelToCoords(Mouse::getPosition(graph->window));
-        coords crds(scaled_mouse_pos.x / graph->cell_size, (scaled_mouse_pos.y - graph->interface_shift) / graph->cell_size);
+        // Vector2i mouse_pos = Mouse::getPosition(app);
+        Vector2f scaled_mouse_pos = graph->window.mapPixelToCoords(
+                Mouse::getPosition(graph->window));
+        coords crds(scaled_mouse_pos.x / graph->cell_size,
+                (scaled_mouse_pos.y - graph->interface_shift) / graph->cell_size);
 
         Event event;
         while (graph->window.pollEvent(event)) {
@@ -103,18 +107,18 @@ void StandAloneApp::main_loop() {
             }
             handle_keyboard_event(event);
         }
-		graph->window.clear(Color::White);
-		for (int x = 0; x < field->field_width; x++) {
-			for (int y = 0; y < field->field_hight; y++) {
+        graph->window.clear(Color::White);
+        for (int x = 0; x < field->field_width; x++) {
+            for (int y = 0; y < field->field_hight; y++) {
                 cell_condition sprite = field->get_sprite(coords(x, y),
                     is_inside_field && sf::Mouse::isButtonPressed(sf::Mouse::Button::Left), crds);
-                graph->draw_cell(x, y, int(sprite));
-			}
+                graph->draw_cell(x, y, static_cast<int>(sprite));
+            }
         }
         field->update_time();
         display_score(scaled_mouse_pos);
-		graph->window.display();
-	}
+        graph->window.display();
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -141,7 +145,8 @@ void load_preset(int preset, uint16_t &field_width, uint16_t &field_hight, uint3
     }
 }
 
-void parse_args(int argc, char *argv[], uint16_t &field_width, uint16_t &field_hight, uint32_t &total_mines) {
+void parse_args(int argc, char *argv[],
+        uint16_t &field_width, uint16_t &field_hight, uint32_t &total_mines) {
     switch (argc) {
         case 2: {
             int preset;

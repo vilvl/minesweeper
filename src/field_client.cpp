@@ -41,7 +41,7 @@ void FieldCli::update(sf::Packet pack) {
     }
     uint8_t player_counter;
     pack >> player_counter;
-    for (uint8_t i = 0; i < player_counter; ++i){
+    for (uint8_t i = 0; i < player_counter; ++i) {
         int16_t id, score;
         bool active;
         pack >> id >> score >> active;
@@ -56,7 +56,7 @@ void FieldCli::init_players(sf::Packet pack, uint16_t my_id) {
     players.clear();
     uint8_t player_counter;
     pack >> player_counter;
-    for (uint8_t i = 0; i < player_counter; ++i){
+    for (uint8_t i = 0; i < player_counter; ++i) {
         int16_t id;
         std::string name;
         pack >> id >> name;

@@ -18,9 +18,19 @@ FieldCell &Field::get_cell(coords crds) {
 }
 
 void Field::generate_field(coords start_crds) {
-    srand(time(NULL));
-    int cls = cells_total;
-    int mns = mines_total;
+    std::random_device rd;
+    std::mt19937::result_type seed = rd() ^ (
+            (std::mt19937::result_type)
+            std::chrono::duration_cast<std::chrono::seconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count() +
+            (std::mt19937::result_type)
+            std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::high_resolution_clock::now().time_since_epoch()).count());
+    std::mt19937 gen(seed);
+    std::uniform_int_distribution<unsigned> distrib(1, field_hight * field_width);
+
+    uint cls = cells_total;
+    uint mns = mines_total;
     bool is_mn = true;
     if (mns > cls/2) {
         is_mn = false;
@@ -31,7 +41,7 @@ void Field::generate_field(coords start_crds) {
                     get_cell(coords(x, y)).is_mine = true;
     }
     while (mns) {
-        coords crds(rand() % field_width, rand() % field_hight);
+        coords crds(distrib(gen) % field_width, distrib(gen) % field_hight);
         if (is_neighbors(start_crds, crds))
             continue;
         FieldCell &cell = get_cell(crds);
@@ -149,8 +159,9 @@ uint8_t Field::count_closed_neighbors(coords crds) {
 }
 
 void Field::flag_closed_neighbors(coords crds) {
-    if (count_closed_neighbors(crds) != get_cell(crds).neighbors)
+    if (count_closed_neighbors(crds) != get_cell(crds).neighbors) {
         return;
+    }
      for (int i = std::max(crds.y - 1, 0); i < std::min(crds.y + 2, field_hight + 0); i++) {
         for (int j = std::max(crds.x - 1, 0); j < std::min(crds.x + 2, field_width + 0); j++) {
             FieldCell &cell = get_cell(coords(j, i));
