@@ -1,50 +1,68 @@
-#include "include/base.hpp"
 #include "include/field.hpp"
 #include "include/graphic.hpp"
 
 #include <memory>
 
-
 using namespace sf;
 
-
 class StandAloneApp {
-public:
+private:
     std::unique_ptr<Field> field;
     std::unique_ptr<Graphic> graph;
+    int16_t score = 0;
 
-    void main_loop();
     void handle_field_events(Event &event, coords crds);
     void handle_interface_events(Event &event, Vector2f crds);
     void handle_keyboard_event(Event &event);
-    void display_score();
+    void display_score(Vector2f mouse);
+    void init_ng(uint8_t preset);
+
+
+public:
+    StandAloneApp(std::string font_path, std::string texture_path, std::string buttons_path);
+    void init(uint16_t field_width, uint16_t field_hight, uint32_t mines_total);
+    void main_loop();
 };
+
+
+StandAloneApp::StandAloneApp(std::string font_path, std::string texture_path, std::string buttons_path) {
+    graph.reset(new Graphic(font_path, texture_path, buttons_path));
+}
+
+void StandAloneApp::init(uint16_t field_width, uint16_t field_hight, uint32_t mines_total) {
+    graph->init_window(field_width, field_hight);
+    field.reset(new Field(field_width, field_hight, mines_total));
+}
+
+void StandAloneApp::init_ng(uint8_t preset) {
+    field.reset(new Field(preset));
+    graph->init_window(field->field_width, field->field_hight);
+    this->score = 0;
+}
 
 
 void StandAloneApp::handle_field_events(Event &event, coords crds) {
     if (field->state != field_state::INGAME && field->state != field_state::NEWGAME)
         return;
-    if (event.type == Event::MouseButtonPressed && event.mouseButton.button == Mouse::Left)
-        graph->buttons_state.l = true;
     if (event.type == Event::MouseButtonPressed && event.mouseButton.button == Mouse::Right) {
-        graph->buttons_state.r = true;
         field->set_flag(crds);
     }
     if (event.type == Event::MouseButtonReleased && event.mouseButton.button == Mouse::Left) {
-        graph->buttons_state.l = false;
-        field->open_cell(crds);
-    }
-    if (event.type == Event::MouseButtonReleased && event.mouseButton.button == Mouse::Right) {
-        graph->buttons_state.r = false;
+        field->open_cell(crds, score);
     }
 }
 
 void StandAloneApp::handle_interface_events(Event &event, Vector2f crds) {
     if (event.type == Event::MouseButtonReleased && event.mouseButton.button == Mouse::Left) {
-        uint16_t field_width = field->field_width;
-        uint16_t field_hight = field->field_hight;
-        uint32_t mines_total = field->mines_total;
-        field.reset(new Field(field_width, field_hight, mines_total));
+        if (graph->buttons_spritesE.getGlobalBounds().contains(crds)) {
+            init_ng(1);
+        }
+        if (graph->buttons_spritesN.getGlobalBounds().contains(crds)) {
+            init_ng(2);
+        }
+        if (graph->buttons_spritesH.getGlobalBounds().contains(crds)) {
+            init_ng(3);
+        }
     }
 }
 
@@ -54,24 +72,18 @@ void StandAloneApp::handle_keyboard_event(Event &event) {
     }
 }
 
-void StandAloneApp::display_score() {
-    std::string state_text;
-    switch(field->state) {
-        case field_state::WIN:       state_text = "GRAZ";         break;
-        case field_state::DEFEAT:    state_text = "YOU LOST";     break;
-        case field_state::PAUSE:     state_text = "PAUSE";        break;
-        case field_state::NEWGAME:   state_text = "CLICK ON THE FIELD TO START";  break;
-        case field_state::INGAME:    state_text = "";             break;
-        default:        state_text = "WTF ITS DISPLAYED???";     break;
-    }
+void StandAloneApp::display_score(Vector2f mouse) {
     graph->draw_interface(
-            std::to_string(field->mines_total - field->flags_total),
-            std::to_string(field->ingame_time_total + field->ingame_time),
-            state_text
+            (field->mines_total - field->flags_total),
+            (field->ingame_time_total + field->ingame_time),
+            field->get_state_text(),
+            mouse
     );
+    graph->draw_score("Sapper", score, 0, true, field->state != field_state::DEFEAT);
 }
 
 void StandAloneApp::main_loop() {
+    bool is_inside_field = false;
     while (graph->window.isOpen()) {
 		// Vector2i mouse_pos = Mouse::getPosition(app);
         Vector2f scaled_mouse_pos = graph->window.mapPixelToCoords(Mouse::getPosition(graph->window));
@@ -81,29 +93,33 @@ void StandAloneApp::main_loop() {
         while (graph->window.pollEvent(event)) {
             if (event.type == Event::Closed)
                 graph->window.close();
-            if (scaled_mouse_pos.y >= graph->interface_shift
-            && scaled_mouse_pos.y <= graph->interface_shift + graph->field_h) {
+            if (scaled_mouse_pos.y > graph->interface_shift
+            && scaled_mouse_pos.y < graph->interface_shift + graph->field_h) {
                 handle_field_events(event, crds);
+                is_inside_field = true;
             } else {
                 handle_interface_events(event, scaled_mouse_pos);
+                is_inside_field = false;
             }
             handle_keyboard_event(event);
         }
 		graph->window.clear(Color::White);
 		for (int x = 0; x < field->field_width; x++) {
 			for (int y = 0; y < field->field_hight; y++) {
-                graph->draw_cell(x, y, int(field->get_sprite(coords(x, y), graph->buttons_state.l, crds)));
+                cell_condition sprite = field->get_sprite(coords(x, y),
+                    is_inside_field && sf::Mouse::isButtonPressed(sf::Mouse::Button::Left), crds);
+                graph->draw_cell(x, y, int(sprite));
 			}
         }
-        field->upate_time();
-        display_score();
+        field->update_time();
+        display_score(scaled_mouse_pos);
 		graph->window.display();
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void load_preset(int preset, u_short &field_width, u_short &field_hight, ushort &total_mines) {
+void load_preset(int preset, uint16_t &field_width, uint16_t &field_hight, uint32_t &total_mines) {
     switch (preset) {
         case 1: {
             field_width = 9;
@@ -125,7 +141,7 @@ void load_preset(int preset, u_short &field_width, u_short &field_hight, ushort 
     }
 }
 
-void parse_args(int argc, char *argv[], u_short &field_width, u_short &field_hight, ushort &total_mines) {
+void parse_args(int argc, char *argv[], uint16_t &field_width, uint16_t &field_hight, uint32_t &total_mines) {
     switch (argc) {
         case 2: {
             int preset;
@@ -153,18 +169,15 @@ void parse_args(int argc, char *argv[], u_short &field_width, u_short &field_hig
 }
 
 int main(int argc, char *argv[]) {
-    u_short field_width, field_hight, mines_total;
+    uint16_t field_width, field_hight;
+    uint32_t mines_total;
     parse_args(argc, argv, field_width, field_hight, mines_total);
 
-    StandAloneApp app;
-    app.graph.reset(new Graphic("resources/arial.ttf", "resources/heb_tiles.jpg"));
-    // load textures
+    StandAloneApp app("resources/arial.ttf", "resources/heb_tiles.png", "resources/buttons.png");
 
-    app.graph->init_window(field_width, field_hight);
-    app.field.reset(new Field(field_width, field_hight, mines_total));
+    app.init(field_width, field_hight, mines_total);
 
     app.main_loop();
 
     return 0;
 }
-

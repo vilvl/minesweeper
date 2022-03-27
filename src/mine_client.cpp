@@ -1,8 +1,7 @@
-#include "include/shared.hpp"
-#include "include/graphic.hpp"
 #include "include/field_client.hpp"
+#include "include/graphic.hpp"
+#include "include/shared.hpp"
 
-#include <cstring>
 #include <memory>
 
 using namespace sf;
@@ -10,20 +9,20 @@ using namespace sf;
 class ClientApp {
 public:
     ClientApp(sf::IpAddress host, u_int port, std::string client_name,
-                std::string font_path, std::string sprites_path);
+                std::string font_path, std::string sprites_path, std::string buttons_path);
 
     std::string client_name = "";
-    sf::SocketSelector selector;
-    sf::TcpSocket sock;
     std::unique_ptr<FieldCli> field;
     std::unique_ptr<Graphic> graph;
+    sf::SocketSelector selector;
+    sf::TcpSocket sock;
     uint16_t id;
 
     void main_loop();
     void handle_field_events(Event &event, coords crds);
     void handle_interface_events(Event &event, Vector2f crds);
     void handle_keyboard_event(Event &event);
-    void display_score();
+    void display_score(Vector2f mouse_pos);
 
     void init_connection(sf::IpAddress host, uint port, std::string &name);
     void send_pack(sf::Packet &pack);
@@ -39,15 +38,15 @@ public:
     void flag_cell(coords crds);
 
     void handle_server_data();
-    void handle_game_state(sf::Packet &pack);     // state
-    void handle_game_new(sf::Packet &pack);       // + field_width + field_hight + mine_counter
-    void handle_game_field(sf::Packet &pack);     // field
+    void handle_game_state(sf::Packet &pack);
+    void handle_game_new(sf::Packet &pack);
+    void handle_game_field(sf::Packet &pack);
     void handle_text_msg(sf::Packet &pack);
     void handle_game_started(sf::Packet &pack);
 };
 
 
-//////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
 #pragma region inet
 
 void ClientApp::init_connection(sf::IpAddress host, uint port, std::string &name) {
@@ -75,7 +74,7 @@ void ClientApp::recv_pack(sf::Packet &pack) {
 }
 
 #pragma endregion
-/////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////
 #pragma region client
 
 void ClientApp::set_name(std::string client_name) {
@@ -217,32 +216,33 @@ void ClientApp::handle_server_data() {
 #pragma region actions
 
 ClientApp::ClientApp(sf::IpAddress host, u_int port, std::string client_name,
-            std::string font_path, std::string sprites_path) {
-    graph.reset(new Graphic(font_path, sprites_path));
+            std::string font_path, std::string sprites_path, std::string buttons_path) {
+    graph.reset(new Graphic(font_path, sprites_path, buttons_path));
     init_connection(host, port, client_name);
 }
 
 void ClientApp::handle_field_events(Event &event, coords crds) {
     if (field->state != field_state::INGAME && field->state != field_state::NEWGAME)
         return;
-    if (event.type == Event::MouseButtonPressed && event.mouseButton.button == Mouse::Left)
-        graph->buttons_state.l = true;
     if (event.type == Event::MouseButtonPressed && event.mouseButton.button == Mouse::Right) {
-        graph->buttons_state.r = true;
         flag_cell(crds);
     }
     if (event.type == Event::MouseButtonReleased && event.mouseButton.button == Mouse::Left) {
-        graph->buttons_state.l = false;
         open_cell(crds);
-    }
-    if (event.type == Event::MouseButtonReleased && event.mouseButton.button == Mouse::Right) {
-        graph->buttons_state.r = false;
     }
 }
 
 void ClientApp::handle_interface_events(Event &event, Vector2f crds) {
     if (event.type == Event::MouseButtonReleased && event.mouseButton.button == Mouse::Left) {
-        ask_ng();
+        if (graph->buttons_spritesE.getGlobalBounds().contains(crds)) {
+            ask_ng(1);
+        }
+        if (graph->buttons_spritesN.getGlobalBounds().contains(crds)) {
+            ask_ng(2);
+        }
+        if (graph->buttons_spritesH.getGlobalBounds().contains(crds)) {
+            ask_ng(3);
+        }
     }
 }
 
@@ -251,20 +251,13 @@ void ClientApp::handle_keyboard_event(Event &event) {
         ask_pause();
     }
 }
-void ClientApp::display_score() {
-    std::string state_text;
-    switch(field->state) {
-        case field_state::WIN:       state_text = "GRAZ";           break;
-        case field_state::DEFEAT:    state_text = "YOU LOST";       break;
-        case field_state::PAUSE:     state_text = "PAUSE";          break;
-        case field_state::NEWGAME:   state_text = "CLICK TO START"; break;
-        case field_state::INGAME:    state_text = "";               break;
-        default:        state_text = "WTF ITS DISPLAYED???";
-    }
+
+void ClientApp::display_score(Vector2f mouse_pos) {
     graph->draw_interface(
-            std::to_string(field->mines_total - field->flags_total),
-            std::to_string(field->ingame_time_total + field->ingame_time),
-            state_text
+            (field->mines_total - field->flags_total),
+            (field->ingame_time_total + field->ingame_time),
+            field->get_state_text(),
+            mouse_pos
     );
     uint counter = 0;
     for (auto const &it : field->players) {
@@ -274,6 +267,7 @@ void ClientApp::display_score() {
 }
 
 void ClientApp::main_loop() {
+    bool is_inside_field = false;
     while (graph->window.isOpen()) {
 
         ask_field();
@@ -285,11 +279,13 @@ void ClientApp::main_loop() {
         graph->window.clear(Color::White);
 		for (int x = 0; x < field->field_width; x++) {
 			for (int y = 0; y < field->field_hight; y++) {
-                graph->draw_cell(x, y, int(field->get_sprite(coords(x, y), graph->buttons_state.l, crds)));
+                cell_condition sprite = field->get_sprite(coords(x, y),
+                    is_inside_field && sf::Mouse::isButtonPressed(sf::Mouse::Button::Left), crds);
+                graph->draw_cell(x, y, int(sprite));
 			}
         }
         field->update_time();
-        display_score();
+        display_score(scaled_mouse_pos);
 		graph->window.display();
 
         Event event;
@@ -299,8 +295,10 @@ void ClientApp::main_loop() {
             if (scaled_mouse_pos.y >= graph->interface_shift
             && scaled_mouse_pos.y <= graph->interface_shift + graph->field_h) {
                 handle_field_events(event, crds);
+                is_inside_field = true;
             } else {
                 handle_interface_events(event, scaled_mouse_pos);
+                is_inside_field = false;
             }
             handle_keyboard_event(event);
         }
@@ -308,7 +306,7 @@ void ClientApp::main_loop() {
 }
 
 #pragma endregion
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
 
 void parse_args(int argc, char *argv[], sf::IpAddress &host, u_int &port, std::string &client_name) {
     if (!(argc == 4
@@ -321,14 +319,13 @@ void parse_args(int argc, char *argv[], sf::IpAddress &host, u_int &port, std::s
 }
 
 int main(int argc, char *argv[]) {
-
     u_int port;
     sf::IpAddress host;
     std::string client_name;
     parse_args(argc, argv, host, port, client_name);
 
     ClientApp app(host, port, client_name,
-        "resources/arial.ttf", "resources/heb_tiles.jpg");
+        "resources/arial.ttf", "resources/heb_tiles.png", "resources/buttons.png");
     app.ask_state();
     app.main_loop();
 }

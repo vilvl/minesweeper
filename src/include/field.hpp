@@ -1,34 +1,22 @@
 #pragma once
 
-#include "base.hpp"
 #include "field_cell.hpp"
+#include "field_base.hpp"
 
 #include <algorithm>  // min & max
-#include <chrono>
 #include <ctime>      // time
 #include <cstdlib>    // srand
 #include <memory>
 #include <vector>
 
-class Field {
+class Field : public FieldBase {
 private:
     std::unique_ptr<std::vector<std::vector<FieldCell>>> cells;
 
 public:
-    uint16_t field_width;
-    uint16_t field_hight;
-    uint32_t mines_total;
-    uint32_t cells_total;
     uint32_t cells_opened = 0;
-    uint32_t flags_total = 0;
-    field_state state = field_state::NEWGAME;
-    std::chrono::steady_clock::time_point time_start;
-    uint32_t ingame_time = 0;
-    uint32_t ingame_time_total = 0;
 
 private:
-    // FieldCellIterator iterate(coords *crds);
-    // void generate_field_probabilisticly(coords start_crds);
     void init(coords crds);
     void generate_field(coords start_crds);
     void count_neighbors();
@@ -39,21 +27,21 @@ private:
     FieldCell &get_cell(coords crds);
     cell_condition get_cell_condition(coords crds);
     cell_condition get_true_condition(coords crds);
-    void open_cell_recursive(coords crds, bool first_iter = false);
-    bool is_neighbors(coords current_cell_pos, coords mouse_pos);
+    void open_cell_recursive(coords crds, int16_t &score, bool first_iter = false);
 
-    void open_closed_neighbors(coords crds);
+    void open_closed_neighbors(coords crds, int16_t &score);
     void flag_closed_neighbors(coords crds);
     uint8_t count_closed_neighbors(coords crds);
     uint8_t count_flaged_neighbors(coords crds);
 
+    void load_preset(int preset, uint16_t &field_width, uint16_t &field_hight, uint32_t &mines_total);
+
 public:
     Field(uint16_t field_width, uint16_t field_hight, uint32_t mines_total);
-    ~Field();
+    Field(uint8_t preset);
     cell_condition get_sprite(coords cur, bool l_button_is_pressed, coords mouse);
-    void open_cell(coords crds);
+    void open_cell(coords crds, int16_t &score);
     void set_state(field_state st);
     void set_flag(coords crds);
     void set_pause();
-    void upate_time();
 };

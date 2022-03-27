@@ -1,15 +1,17 @@
 #include "include/field.hpp"
 
-Field::Field(uint16_t field_width, uint16_t field_hight, uint32_t mines_total):
-            field_width(field_width),
-            field_hight(field_hight),
-            mines_total(mines_total) {
+Field::Field(uint8_t preset):
+FieldBase(preset) {
     this->cells.reset(new std::vector<std::vector<FieldCell>>(
                       field_hight, std::vector<FieldCell>(field_width)));
-    this->cells_total = field_hight * field_width;
 }
 
-Field::~Field() {}
+Field::Field(uint16_t field_width, uint16_t field_hight, uint32_t mines_total):
+FieldBase(field_width, field_hight, mines_total) {
+    this->cells.reset(new std::vector<std::vector<FieldCell>>(
+                      field_hight, std::vector<FieldCell>(field_width)));
+}
+
 
 FieldCell &Field::get_cell(coords crds) {
     return cells->at(crds.y)[crds.x];
@@ -87,37 +89,41 @@ void Field::set_state(field_state st) {
     }
 }
 
-void Field::open_cell_recursive(coords crds, bool first_iter) {
+void Field::open_cell_recursive(coords crds, int16_t &score, bool first_iter) {
+    int16_t tmp = 0;
     int res = get_cell(crds).open_cell();
     if (res == -3) {
         flags_total += 1;
+        score -= 10;
         set_state(field_state::DEFEAT);
         return;
     }
     if (res == -1 && first_iter)
-        open_closed_neighbors(crds);
+        open_closed_neighbors(crds, score);
     if (res >= 0) {
         this->cells_opened++;
-        if (res == 0)
-            open_closed_neighbors(crds);
+        score += 1;
+        if (res == 0) {
+            open_closed_neighbors(crds, tmp);
+        }
     }
 }
 
-void Field::open_cell(coords crds) {
+void Field::open_cell(coords crds, int16_t &score) {
     if (cells_opened == 0)
         init(crds);
-    open_cell_recursive(crds, true);
+    open_cell_recursive(crds, score, true);
     check_win_condition();
 }
 
-void Field::open_closed_neighbors(coords crds) {
+void Field::open_closed_neighbors(coords crds, int16_t &score) {
     // neighbor iterator
     if (get_cell(crds).state != cell_state::OPENED
     || get_cell(crds).neighbors != count_flaged_neighbors(crds))
         return;
     for (int i = std::max(crds.y - 1, 0); i < std::min(crds.y + 2, field_hight + 0); i++)
         for (int j = std::max(crds.x - 1, 0); j < std::min(crds.x + 2, field_width + 0); j++)
-            open_cell_recursive(coords(j, i));
+            open_cell_recursive(coords(j, i), score);
 }
 
 uint8_t Field::count_flaged_neighbors(coords crds) {
@@ -204,16 +210,6 @@ cell_condition Field::get_true_condition(coords crds) {
     if (cell.state == cell_state::CLOSED && cell.is_mine)
         return cell_condition::MINE;
     return get_cell_condition(crds);
-}
-
-bool Field::is_neighbors(coords pos1, coords pos2) {
-    return (abs(pos1.x - pos2.x) <= 1 && abs(pos1.y - pos2.y) <= 1);
-}
-
-void Field::upate_time() {
-    if (state == field_state::INGAME)
-        ingame_time = std::chrono::duration_cast<std::chrono::seconds>
-                                (std::chrono::steady_clock::now() - time_start).count();
 }
 
 cell_condition Field::get_sprite(coords cur, bool l_button_is_pressed, coords mouse) {

@@ -45,7 +45,6 @@ private:
     void set_pause();
     void open_cell(coords crds, Player &player);
     void flag_cell(coords crds, Player &player);
-    void load_preset(int preset, uint16_t &field_width, uint16_t &field_hight, uint32_t &mines_total);
 
 public:
     vector<Player> players;
@@ -128,11 +127,8 @@ void ServerApp::open_cell(coords crds, Player &player) {
     } if (state != app_state::INGAME || !player.active) {
         return;
     }
-    field->open_cell(crds);
-    if (field->state != field_state::DEFEAT) {
-        player.score += 1;
-    } else {
-        player.score -= 10;
+    field->open_cell(crds, player.score);
+    if (field->state == field_state::DEFEAT) {
         player.active = false;
         for (auto &p : players)
             if (p.active)
@@ -152,7 +148,7 @@ void ServerApp::flag_cell(coords crds, Player &player) {
 
 void ServerApp::send_field(Player &player) {
     // msg_type << field_state << time << field << score
-    field->upate_time();
+    field->update_time();
     sf::Packet pack;
     pack << uint8_t(srv_msg::GAME_FIELD);
     pack << uint8_t(field->state);
@@ -248,27 +244,6 @@ void ServerApp::send_to_player(Player &player, sf::Packet &pack) {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
-void ServerApp::load_preset(int preset, uint16_t &field_width, uint16_t &field_hight, uint32_t &mines_total) {
-    switch (preset) {
-        case 1: {
-            field_width = 9;
-            field_hight = 9;
-            mines_total = 10;
-            break;
-        }
-        case 2: {
-            field_width = 16;
-            field_hight = 16;
-            mines_total = 40;
-            break;
-        }
-        case 3:
-            field_width = 30;
-            field_hight = 16;
-            mines_total = 99;
-            break;
-    }
-}
 
 void ServerApp::init_new_game(uint16_t field_width, uint16_t field_hight, uint32_t mines_total) {
     field.reset(new Field(field_width, field_hight, mines_total));
@@ -280,14 +255,22 @@ void ServerApp::init_new_game(uint16_t field_width, uint16_t field_hight, uint32
     for (auto &player : players) {
         player.active = false;
         player.ready = false;
+        player.score = 0;
     }
 }
 
 void ServerApp::init_new_game(uint8_t preset) {
-    uint16_t field_width, field_hight;
-    uint32_t mines_total;
-    load_preset(preset, field_width, field_hight, mines_total);
-    init_new_game(field_width, field_hight, mines_total);
+    field.reset(new Field(preset));
+    this->state = app_state::WAITING_NG;
+    sf::Packet pack;
+    pack << uint8_t(srv_msg::GAME_NEW) << field->field_width << field->field_hight << field->mines_total;
+    send_all(pack);
+    cout << "New game inited" << endl;
+    for (auto &player : players) {
+        player.active = false;
+        player.ready = false;
+        player.score = 0;
+    }
 }
 
 void ServerApp::main_loop() {

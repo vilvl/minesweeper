@@ -1,10 +1,7 @@
 #include "include/field_client.hpp"
 
 FieldCli::FieldCli(uint16_t field_width, uint16_t field_hight, uint32_t mines_total):
-field_width(field_width),
-field_hight(field_hight),
-cells_total(field_hight * field_width),
-mines_total(mines_total) {
+FieldBase(field_width, field_hight, mines_total) {
     this->cells = std::vector<std::vector<cell_condition>>(
                     field_hight, std::vector<cell_condition>(field_width));
 }
@@ -65,14 +62,4 @@ void FieldCli::init_players(sf::Packet pack, uint16_t my_id) {
         pack >> id >> name;
         players.insert(std::make_pair(id, PlayerCli(id, name, (my_id == id))));
     }
-}
-
-bool FieldCli::is_neighbors(coords pos1, coords pos2) {
-    return (abs(pos1.x - pos2.x) <= 1 && abs(pos1.y - pos2.y) <= 1);
-}
-
-void FieldCli::update_time() {
-    if (state == field_state::INGAME)
-        ingame_time = std::chrono::duration_cast<std::chrono::seconds>
-                                (std::chrono::steady_clock::now() - time_start).count();
 }
