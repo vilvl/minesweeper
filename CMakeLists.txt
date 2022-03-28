@@ -2,8 +2,17 @@ cmake_minimum_required(VERSION 3.18)
 
 project(minesweeper.net VERSION 0.1)
 
+# -std=c++11
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+# -D flag:
+# add_definitions(-DSOME_IMPORTANT_DEFINITION)
+
+# compiler flags
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic-errors")
+
+find_package(SFML 2.5 COMPONENTS system graphics window network REQUIRED)
 
 add_library(field
     src/field.cpp
@@ -44,9 +53,8 @@ target_link_libraries(mines_client
     sfml-network)
 
 
-# install(DIRECTORY "resources/"
-#     DESTINATION "resources/"
-#     FILES_MATCHING PATTERN "*.*" )
+install(TARGETS mines_sp EXPORT mines_spConfig)
+install(DIRECTORY resources DESTINATION bin)
 
 # install(TARGETS mines_sp mines_server mines_client
 #     # DESTINATION "resources"

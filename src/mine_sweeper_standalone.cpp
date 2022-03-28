@@ -148,6 +148,10 @@ void load_preset(int preset, uint16_t &field_width, uint16_t &field_hight, uint3
 void parse_args(int argc, char *argv[],
         uint16_t &field_width, uint16_t &field_hight, uint32_t &total_mines) {
     switch (argc) {
+        case 1: {
+            load_preset(1, field_width, field_hight, total_mines);
+                return;
+        }
         case 2: {
             int preset;
             if ((preset = atoi(argv[1])) < 1 || preset > 3) {

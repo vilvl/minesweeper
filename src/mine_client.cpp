@@ -47,7 +47,7 @@ class ClientApp {
 
 
 //////////////////////////////////////////////////////////////////////////////////
-#pragma region inet
+// #pragma region inet
 
 void ClientApp::init_connection(sf::IpAddress host, uint port, std::string &name) {
     this->client_name = name;
@@ -73,9 +73,9 @@ void ClientApp::recv_pack(sf::Packet &pack) {
     }
 }
 
-#pragma endregion
+// #pragma endregion
 ////////////////////////////////////////////////////////////////////////////////////////
-#pragma region client
+// #pragma region client
 
 void ClientApp::set_name(std::string client_name) {
     this->client_name = client_name;
@@ -148,9 +148,9 @@ void ClientApp::flag_cell(coords crds) {
     send_pack(pack);
 }
 
-#pragma endregion
+// #pragma endregion
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-#pragma region server
+// #pragma region server
 
 void ClientApp::handle_game_state(sf::Packet &pack) {
     uint8_t state;
@@ -211,9 +211,9 @@ void ClientApp::handle_server_data() {
     }
 }
 
-#pragma endregion
+// #pragma endregion
 ///////////////////////////////////////////////////////////////////////
-#pragma region actions
+// #pragma region actions
 
 ClientApp::ClientApp(sf::IpAddress host, u_int port, std::string client_name,
             std::string font_path, std::string sprites_path, std::string buttons_path) {
@@ -305,7 +305,7 @@ void ClientApp::main_loop() {
     }
 }
 
-#pragma endregion
+// #pragma endregion
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 void parse_args(int argc, char *argv[],
