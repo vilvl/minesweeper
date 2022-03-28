@@ -53,11 +53,5 @@ target_link_libraries(mines_client
     sfml-network)
 
 
-install(TARGETS mines_sp EXPORT mines_spConfig)
+install(TARGETS mines_sp mines_server mines_client EXPORT mines_spConfig)
 install(DIRECTORY resources DESTINATION bin)
-
-# install(TARGETS mines_sp mines_server mines_client
-#     # DESTINATION "resources"
-#     CONFIGURATIONS Release
-#     # RUNTIME DESTINATION bin
-# )
