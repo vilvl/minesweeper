@@ -54,7 +54,7 @@ class ServerApp {
     app_state state = app_state::NOTINITED;
 
  public:
-    ServerApp(u_int port, sf::IpAddress ip = sf::IpAddress::Any,
+    ServerApp(unsigned port, sf::IpAddress ip = sf::IpAddress::Any,
               bool unblock_sockets = false);
     ~ServerApp() {
         // listener.~Socket();
@@ -313,7 +313,7 @@ void ServerApp::main_loop() {
     }
 }
 
-ServerApp::ServerApp(u_int port, sf::IpAddress ip,
+ServerApp::ServerApp(unsigned port, sf::IpAddress ip,
             bool unblock_sockets): unblock_sockets(unblock_sockets) {
     if (listener.listen(port, ip) != sf::Socket::Done) {
         cerr << "ERROR: cant bind master-soclet" << endl;
@@ -327,7 +327,7 @@ ServerApp::ServerApp(u_int port, sf::IpAddress ip,
 
 /////////////////////////////////////////////////////////////////////////////////////
 
-void parse_args(int argc, char *argv[], u_int &port) {
+void parse_args(int argc, char *argv[], unsigned &port) {
     if (!(argc == 2 && (port = atoi(argv[1])) && (port > 0) && port <= (MAX_PORT))) {
         cerr << "ERROR: cant get port from cmd argument" << endl;
         exit(-1);
@@ -335,7 +335,7 @@ void parse_args(int argc, char *argv[], u_int &port) {
 }
 
 int main(int argc, char *argv[]) {
-    u_int port;
+    unsigned port;
     // sf::IpAddress ip_address = sf::IpAddress::Any;
     parse_args(argc, argv, port);
     ServerApp app(port);

@@ -112,7 +112,7 @@ void Graphic::draw_interface(uint32_t mines, uint32_t time, std::string state, V
 }
 
 void Graphic::draw_score(const std::string name, const int16_t score,
-            const uint pos, const bool its_me, const bool active) {
+            const unsigned pos, const bool its_me, const bool active) {
     if (!active)
         score_text.setFillColor(sf::Color::Red);
     else if (its_me)

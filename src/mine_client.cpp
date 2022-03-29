@@ -8,7 +8,7 @@ using namespace sf;
 
 class ClientApp {
  public:
-    ClientApp(sf::IpAddress host, u_int port, std::string client_name,
+    ClientApp(sf::IpAddress host, unsigned port, std::string client_name,
                 std::string font_path, std::string sprites_path, std::string buttons_path);
 
     std::string client_name = "";
@@ -24,7 +24,7 @@ class ClientApp {
     void handle_keyboard_event(Event &event);
     void display_score(Vector2f mouse_pos);
 
-    void init_connection(sf::IpAddress host, uint port, std::string &name);
+    void init_connection(sf::IpAddress host, unsigned port, std::string &name);
     void send_pack(sf::Packet &pack);
     void recv_pack(sf::Packet &pack);
 
@@ -49,7 +49,7 @@ class ClientApp {
 //////////////////////////////////////////////////////////////////////////////////
 // #pragma region inet
 
-void ClientApp::init_connection(sf::IpAddress host, uint port, std::string &name) {
+void ClientApp::init_connection(sf::IpAddress host, unsigned port, std::string &name) {
     this->client_name = name;
     sock.setBlocking(true);
     if (sock.connect(host, port) != sf::Socket::Done)
@@ -215,7 +215,7 @@ void ClientApp::handle_server_data() {
 ///////////////////////////////////////////////////////////////////////
 // #pragma region actions
 
-ClientApp::ClientApp(sf::IpAddress host, u_int port, std::string client_name,
+ClientApp::ClientApp(sf::IpAddress host, unsigned port, std::string client_name,
             std::string font_path, std::string sprites_path, std::string buttons_path) {
     graph.reset(new Graphic(font_path, sprites_path, buttons_path));
     init_connection(host, port, client_name);
@@ -258,7 +258,7 @@ void ClientApp::display_score(Vector2f mouse_pos) {
             (field->ingame_time_total + field->ingame_time),
             field->get_state_text(),
             mouse_pos);
-    uint counter = 0;
+    unsigned counter = 0;
     for (auto const &it : field->players) {
         auto &player = it.second;
         graph->draw_score(player.name, player.score, counter++, player.its_me, player.active);
@@ -309,7 +309,7 @@ void ClientApp::main_loop() {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 void parse_args(int argc, char *argv[],
-        sf::IpAddress &host, u_int &port, std::string &client_name) {
+        sf::IpAddress &host, unsigned &port, std::string &client_name) {
     if (!(argc == 4
             && (host = argv[1]) != sf::IpAddress::None
             && (port = atoi(argv[2])) && (port > 0) && port <= (MAX_PORT)
@@ -321,7 +321,7 @@ void parse_args(int argc, char *argv[],
 }
 
 int main(int argc, char *argv[]) {
-    u_int port;
+    unsigned port;
     sf::IpAddress host;
     std::string client_name;
     parse_args(argc, argv, host, port, client_name);

@@ -29,8 +29,8 @@ void Field::generate_field(coords start_crds) {
     std::mt19937 gen(seed);
     std::uniform_int_distribution<unsigned> distrib(1, field_hight * field_width);
 
-    uint cls = cells_total;
-    uint mns = mines_total;
+    unsigned cls = cells_total;
+    unsigned mns = mines_total;
     bool is_mn = true;
     if (mns > cls/2) {
         is_mn = false;
