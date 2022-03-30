@@ -34,11 +34,27 @@ enum class field_state {
 struct coords {
     int16_t x;
     int16_t y;
+    coords(): x(-1), y(-1) {}
     coords(int x, int y): x(x), y(y) {}
     bool operator==(coords& other) const {
         return (x == other.x && y == other.y);
     }
+    coords(const coords &crds):
+        x(crds.x), y(crds.y) {};
+    coords& operator=(const coords& other) {
+        x = other.x;
+        y = other.y;
+        return *this;
+    }
 };
+
+struct OpenedCell {
+    cell_condition cond;
+    coords crds;
+    OpenedCell(): cond(cell_condition::UNDEFINED) {}
+    OpenedCell(coords crds, cell_condition cond): cond(cond), crds(crds) {}
+};
+
 
 class FieldBase {
  public:

@@ -12,11 +12,14 @@ class ClientApp {
                 std::string font_path, std::string sprites_path, std::string buttons_path);
 
     std::string client_name = "";
+    uint16_t winner_id = 0;
     std::unique_ptr<FieldCli> field;
     std::unique_ptr<Graphic> graph;
     sf::SocketSelector selector;
     sf::TcpSocket sock;
     uint16_t id;
+
+    std::string get_winner_name();
 
     void main_loop();
     void handle_field_events(Event &event, coords crds);
@@ -42,6 +45,10 @@ class ClientApp {
     void handle_game_new(sf::Packet &pack);
     void handle_game_field(sf::Packet &pack);
     void handle_text_msg(sf::Packet &pack);
+    void handle_cells_opened(sf::Packet &pack);
+    void handle_game_end(sf::Packet &pack);
+    void handle_you_dead();
+
     void handle_game_started(sf::Packet &pack);
 };
 
@@ -60,15 +67,27 @@ void ClientApp::init_connection(sf::IpAddress host, unsigned port, std::string &
 }
 
 void ClientApp::send_pack(sf::Packet &pack) {
-    if (sock.send(pack) != sf::Socket::Done) {
-        std::cerr << "Error: connectoin was not established" << std::endl;
+    switch (sock.send(pack)) {
+        case sf::Socket::Disconnected: {
+            std::cerr << "Server disconected" << std::endl;
+            exit(-2);
+        } case sf::Socket::Error: {
+            std::cerr << "Error on packet recieve" << std::endl;
+            exit(-2);
+        } default: {}
         // sf::sleep(sf::Time(1000000));
     }
 }
 
 void ClientApp::recv_pack(sf::Packet &pack) {
-    if (sock.receive(pack) != sf::Socket::Done) {
-        std::cerr << "Error: connectoin was not established" << std::endl;
+    switch (sock.receive(pack)) {
+        case sf::Socket::Disconnected: {
+            std::cerr << "Server disconected" << std::endl;
+            exit(-2);
+        } case sf::Socket::Error: {
+            std::cerr << "Error on packet recieve" << std::endl;
+            exit(-2);
+        } default: {}
         // sf::sleep(sf::Time(1000000));
     }
 }
@@ -138,14 +157,23 @@ void ClientApp::ask_pause() {
 
 void ClientApp::open_cell(coords crds) {
     sf::Packet pack;
-    pack << uint8_t(cli_msg::OPEN_CELL) << crds;
-    send_pack(pack);
+    std::vector<coords> op_crds;
+    field->field_cells_to_open(crds, op_crds);
+    uint32_t sz = op_crds.size();
+    if (sz > 0) {
+        pack << uint8_t(cli_msg::OPEN_CELL) << sz;
+        for (auto &op_crd : op_crds) {
+            pack << op_crd;
+        }
+        send_pack(pack);
+    }
 }
 
 void ClientApp::flag_cell(coords crds) {
-    sf::Packet pack;
-    pack << uint8_t(cli_msg::FLAG_CELL) << crds;
-    send_pack(pack);
+    field->set_flag(crds);
+    // sf::Packet pack;
+    // pack << uint8_t(cli_msg::FLAG_CELL) << crds;
+    // send_pack(pack);
 }
 
 // #pragma endregion
@@ -170,6 +198,7 @@ void ClientApp::handle_game_new(sf::Packet &pack) {
     this->graph->init_window(field_width, field_hight);
     this->field.reset(new FieldCli(field_width, field_hight, mines_total));
     set_ready();
+    ask_field();
 }
 
 void ClientApp::handle_text_msg(sf::Packet &pack) {
@@ -182,9 +211,39 @@ void ClientApp::handle_game_field(sf::Packet &pack) {
     field->update(pack);
 }
 
+void ClientApp::handle_cells_opened(sf::Packet &pack) {
+    uint16_t id, score;
+    uint32_t sz, time;
+    std::vector<OpenedCell> op_cells;
+
+    pack >> time >> id >> score >> sz;
+    field->players.at(id).score = score;
+
+    for (uint32_t i = 0; i < sz; ++i) {
+        OpenedCell el;
+        pack >> el;
+        op_cells.push_back(el);
+    }
+
+    field->update_cells(op_cells, time);
+}
+
+
 void ClientApp::handle_game_started(sf::Packet &pack) {
     field->init_players(pack, id);
+    field->state = field_state::INGAME;
 }
+
+void ClientApp::handle_you_dead() {
+    field->state = field_state::DEFEAT;
+}
+
+void ClientApp::handle_game_end(sf::Packet &pack) {
+    bool win;
+    pack >> win >> this->winner_id;
+    field->state = (win ? field_state::WIN : field_state::DEFEAT);
+}
+
 
 void ClientApp::handle_server_data() {
     sf::Packet pack;
@@ -207,6 +266,14 @@ void ClientApp::handle_server_data() {
         } case srv_msg::GAME_STARTED: {
             handle_game_started(pack);
             break;
+        } case srv_msg::YOU_DEAD: {
+            handle_you_dead();
+            break;
+        } case srv_msg::CELLS_OPENED: {
+            handle_cells_opened(pack);
+            break;
+        } case srv_msg::GAME_END: {
+            handle_game_end(pack);
         }
     }
 }
@@ -253,10 +320,12 @@ void ClientApp::handle_keyboard_event(Event &event) {
 }
 
 void ClientApp::display_score(Vector2f mouse_pos) {
+    std::string state_text = (field->state == field_state::WIN ?
+        field->players.at(winner_id).name + " WIN!": field->get_state_text());
     graph->draw_interface(
             (field->mines_total - field->flags_total),
             (field->ingame_time_total + field->ingame_time),
-            field->get_state_text(),
+            state_text,
             mouse_pos);
     unsigned counter = 0;
     for (auto const &it : field->players) {
@@ -268,7 +337,7 @@ void ClientApp::display_score(Vector2f mouse_pos) {
 void ClientApp::main_loop() {
     bool is_inside_field = false;
     while (graph->window.isOpen()) {
-        ask_field();
+        // ask_field();
         while (selector.wait(sf::milliseconds(10)) && selector.isReady(sock))
             handle_server_data();
 

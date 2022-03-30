@@ -51,7 +51,8 @@ void StandAloneApp::handle_field_events(Event &event, coords crds) {
         field->set_flag(crds);
     }
     if (event.type == Event::MouseButtonReleased && event.mouseButton.button == Mouse::Left) {
-        field->open_cell(crds, score);
+        field->open_cell(crds);
+        score += (field->state == field_state::DEFEAT ? -10 : 1);
     }
 }
 

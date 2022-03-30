@@ -20,6 +20,9 @@ class FieldCli : public FieldBase {
  private:
     std::vector<std::vector<cell_condition>> cells;
 
+    uint8_t count_closed_neighbors(coords crds);
+    void flag_closed_neighbors(coords crds);
+
  public:
     std::unordered_map<uint16_t, PlayerCli> players;
 
@@ -29,4 +32,10 @@ class FieldCli : public FieldBase {
     cell_condition get_sprite(coords cur, bool l_button_is_pressed, coords mouse);
     void update(sf::Packet pack);
     void init_players(sf::Packet pack, uint16_t my_id);
+
+    void set_flag(coords crds);
+
+    void update_cells(std::vector<OpenedCell>, uint32_t time);
+    void field_cells_to_open(coords crds, std::vector<coords> &op_coords);
+
 };

@@ -69,7 +69,7 @@ void Graphic::draw_cell(int x, int y, int sprite) {
     window.draw(cell_sprites);
 }
 
-void Graphic::draw_interface(uint32_t mines, uint32_t time, std::string state, Vector2f mouse) {
+void Graphic::draw_interface(int32_t mines, uint32_t time, std::string state, Vector2f mouse) {
     mine_text.setString(std::to_string(mines));
     mine_text.setPosition(Vector2f(cell_size / 2.,
                     (interface_shift - little_font_size) / 2.));
@@ -85,7 +85,9 @@ void Graphic::draw_interface(uint32_t mines, uint32_t time, std::string state, V
         sf::FloatRect textRect = state_text.getLocalBounds();
         state_text.setOrigin(textRect.left + textRect.width/2.0f,
                textRect.top  + textRect.height/2.0f);
-        state_text.setPosition(sf::Vector2f(window.getView().getCenter()));
+        sf::Vector2f center = sf::Vector2f(window.getView().getCenter());
+        center.y = interface_shift + field_h/2.;
+        state_text.setPosition(center);
         window.draw(state_text);
     }
 

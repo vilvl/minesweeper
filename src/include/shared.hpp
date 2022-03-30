@@ -14,6 +14,16 @@ inline sf::Packet& operator >>(sf::Packet& packet, coords& crds) {
     return packet >> crds.x >> crds.y;
 }
 
+inline sf::Packet& operator <<(sf::Packet& packet, OpenedCell& opened_cells) {
+    return packet << opened_cells.crds.x << opened_cells.crds.y << uint8_t(opened_cells.cond);
+}
+
+inline sf::Packet& operator >>(sf::Packet& packet, OpenedCell& opened_cells) {
+        uint8_t tmp;
+        packet >> opened_cells.crds.x >> opened_cells.crds.y >> tmp;
+        opened_cells.cond = cell_condition(tmp);
+        return packet;
+}
 
 enum class cli_msg {
     ASK_STATE,      //
@@ -32,8 +42,9 @@ enum class srv_msg {
     GAME_NEW,       // + field_width + field_hight + mine_counter
     GAME_STARTED,   // players
     GAME_FIELD,     // field_state
-    // GAME_END_WIN,        // + field_state
-    // GAME_END_DEFEAT,     // + field_state
+    CELLS_OPENED,   // + player id + score + size + vector<opened_cells> (cond + coord)
+    YOU_DEAD,
+    GAME_END,        // + win/lost + player id
     // PLAYER_DISCONNECTED, // + id
     TEXT_MSG,       // + msg
 };

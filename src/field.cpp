@@ -99,41 +99,54 @@ void Field::set_state(field_state st) {
     }
 }
 
-void Field::open_cell_recursive(coords crds, int16_t &score, bool first_iter) {
-    int16_t tmp = 0;
+void Field::open_cell_recursive(coords crds, op_vec_ptr &op_cells, bool first_iter) {
     int res = get_cell(crds).open_cell();
     if (res == -3) {
         flags_total += 1;
-        score -= 10;
+        op_cells->push_back(OpenedCell(crds, cell_condition::EXPLODED));
         set_state(field_state::DEFEAT);
         return;
+    } else if (res >= 0) {
+        op_cells->push_back(OpenedCell(crds, cell_condition(res)));
     }
     if (res == -1 && first_iter)
-        open_closed_neighbors(crds, score);
+        open_closed_neighbors(crds, op_cells);
     if (res >= 0) {
         this->cells_opened++;
-        score += 1;
         if (res == 0) {
-            open_closed_neighbors(crds, tmp);
+            open_closed_neighbors(crds, op_cells);
         }
     }
 }
 
-void Field::open_cell(coords crds, int16_t &score) {
+op_vec_ptr Field::open_cell(coords crds) {
     if (cells_opened == 0)
         init(crds);
-    open_cell_recursive(crds, score, true);
+    op_vec_ptr op_cells(new std::vector<OpenedCell>);
+    open_cell_recursive(crds, op_cells, true);
     check_win_condition();
+    return op_cells;
 }
 
-void Field::open_closed_neighbors(coords crds, int16_t &score) {
+op_vec_ptr Field::open_cells(std::vector<coords> &crds) {
+    op_vec_ptr op_cells(new std::vector<OpenedCell>);
+    for (auto it = crds.begin(); it < crds.end(); it++) {
+        if (cells_opened == 0)
+            init(*it);
+        open_cell_recursive(*it, op_cells, true);
+    }
+    check_win_condition();
+    return op_cells;
+}
+
+void Field::open_closed_neighbors(coords crds, op_vec_ptr &op_cells) {
     // neighbor iterator
     if (get_cell(crds).state != cell_state::OPENED
     || get_cell(crds).neighbors != count_flaged_neighbors(crds))
         return;
     for (int i = std::max(crds.y - 1, 0); i < std::min(crds.y + 2, field_hight + 0); i++)
         for (int j = std::max(crds.x - 1, 0); j < std::min(crds.x + 2, field_width + 0); j++)
-            open_cell_recursive(coords(j, i), score);
+            open_cell_recursive(coords(j, i), op_cells);
 }
 
 uint8_t Field::count_flaged_neighbors(coords crds) {

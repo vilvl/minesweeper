@@ -16,6 +16,9 @@ struct Player {
     Player() {
         id = curr_id++;
     }
+    bool operator<(const Player &other) {
+        return (this->score < other.score);
+    }
 };
 
 int16_t Player::curr_id = 0;
@@ -43,7 +46,7 @@ class ServerApp {
     void set_ready(Player &player);
     void set_name(Player &player, string &player_name);
     void set_pause();
-    void open_cell(coords crds, Player &player);
+    void open_cell(vector<coords> &crds, Player &player);
     void flag_cell(coords crds, Player &player);
 
  public:
@@ -52,6 +55,7 @@ class ServerApp {
     sf::SocketSelector selector;
     unique_ptr<Field> field = nullptr;
     app_state state = app_state::NOTINITED;
+    unsigned score_on_defeat = 10;
 
  public:
     ServerApp(unsigned port, sf::IpAddress ip = sf::IpAddress::Any,
@@ -116,28 +120,53 @@ void ServerApp::set_pause() {
     cout << "pause set" << endl;
 }
 
-void ServerApp::open_cell(coords crds, Player &player) {
+void ServerApp::open_cell(vector<coords> &op_crds, Player &player) {
+    field->update_time();
     if (state == app_state::WAITING_NG && check_players_ready()) {
         state = app_state::INGAME;
         sf::Packet pack;
         pack << uint8_t(srv_msg::GAME_STARTED) << uint8_t(players.size());
         for (auto &player : players)
-            pack << player.id << player.name;
+            if (player.active)
+                pack << player.id << player.name;
         send_all(pack);
     }
     if (state != app_state::INGAME || !player.active) {
         return;
     }
-    field->open_cell(crds, player.score);
+    op_vec_ptr op_cells = field->open_cells(op_crds);
     if (field->state == field_state::DEFEAT) {
         player.active = false;
+        player.score -= score_on_defeat;
+        sf::Packet pack_dead;
+        pack_dead << uint8_t(srv_msg::YOU_DEAD);
+        send_to_player(player, pack_dead);
+        cout << "player dead id: " << player.id << endl;
         for (auto &p : players)
             if (p.active)
                 field->set_state(field_state::INGAME);
+    } else {
+        player.score += op_crds.size();
     }
-    if (field->state == field_state::WIN || field->state == field_state::DEFEAT)
+    sf::Packet pack;
+    pack << uint8_t(srv_msg::CELLS_OPENED);
+    pack << uint32_t(field->ingame_time_total + field->ingame_time);
+    pack << player.id << player.score;
+    pack << uint32_t(op_cells->size());
+    for (auto &op_cell : *op_cells) {
+        pack << op_cell;
+    }
+    send_all(pack);
+    cout << "cell opened by vector of " << op_crds.size() << endl;
+    if (field->state == field_state::WIN || field->state == field_state::DEFEAT) {
         state = app_state::FINISHED;
-    cout << "cell opened: " << crds.x << ", " << crds.y << endl;
+        sf::Packet pack_end;
+        pack_end << uint8_t(srv_msg::GAME_END) << bool(field->state == field_state::WIN);
+        uint16_t win_id = max(players.begin(), players.end())->id;
+        pack_end << win_id;
+        cout << "game ended: " << (field->state == field_state::WIN ? "win" : "defeat") << ", player win: " << win_id << endl;
+        send_all(pack_end);
+    }
 }
 
 void ServerApp::flag_cell(coords crds, Player &player) {
@@ -149,6 +178,13 @@ void ServerApp::flag_cell(coords crds, Player &player) {
 
 void ServerApp::send_field(Player &player) {
     // msg_type << field_state << time << field << score
+    // state = app_state::INGAME;
+    sf::Packet pack_pl;
+    pack_pl << uint8_t(srv_msg::GAME_STARTED) << uint8_t(players.size());
+    for (auto &player : players)
+        if (player.active)
+            pack_pl << player.id << player.name;
+    send_to_player(player, pack_pl);
     field->update_time();
     sf::Packet pack;
     pack << uint8_t(srv_msg::GAME_FIELD);
@@ -200,14 +236,20 @@ void ServerApp::handle_client_data(Player &player, sf::Packet &pack) {
             set_pause();
             break;
         } case cli_msg::OPEN_CELL: {
-            coords crds(0, 0);
-            pack >> crds;
-            open_cell(crds, player);
+            vector<coords> op_coords;
+            uint32_t sz;
+            pack >> sz;
+            for (uint32_t i = 0; i < sz; ++i) {
+                coords crds;
+                pack >> crds;
+                op_coords.push_back(crds);
+            }
+            open_cell(op_coords, player);
             break;
         } case cli_msg::FLAG_CELL: {
-            coords crds(0, 0);
-            pack >> crds;
-            flag_cell(crds, player);
+            // coords crds(0, 0);
+            // pack >> crds;
+            // flag_cell(crds, player);
             break;
         }
     }

@@ -8,6 +8,8 @@
 #include <memory>
 #include <vector>
 
+using op_vec_ptr = std::unique_ptr<std::vector<OpenedCell>>;
+
 class Field : public FieldBase {
  private:
     std::unique_ptr<std::vector<std::vector<FieldCell>>> cells;
@@ -26,9 +28,9 @@ class Field : public FieldBase {
     FieldCell &get_cell(coords crds);
     cell_condition get_cell_condition(coords crds);
     cell_condition get_true_condition(coords crds);
-    void open_cell_recursive(coords crds, int16_t &score, bool first_iter = false);
+    void open_cell_recursive(coords crds, op_vec_ptr &op_cells, bool first_iter = false);
 
-    void open_closed_neighbors(coords crds, int16_t &score);
+    void open_closed_neighbors(coords crds, op_vec_ptr &op_cells);
     void flag_closed_neighbors(coords crds);
     uint8_t count_closed_neighbors(coords crds);
     uint8_t count_flaged_neighbors(coords crds);
@@ -40,7 +42,8 @@ class Field : public FieldBase {
     Field(uint16_t field_width, uint16_t field_hight, uint32_t mines_total);
     explicit Field(uint8_t preset);
     cell_condition get_sprite(coords cur, bool l_button_is_pressed, coords mouse);
-    void open_cell(coords crds, int16_t &score);
+    op_vec_ptr open_cell(coords crds);
+    op_vec_ptr open_cells(std::vector<coords> &crds);
     void set_state(field_state st);
     void set_flag(coords crds);
     void set_pause();
