@@ -1,0 +1,25 @@
+workdir_from_host = true
+ssh_port = 22338
+image_build_command = "docker build docker -f docker/Dockerfile -t {image_name}"
+use_local_config = false
+sh_cmd = "bash"
+
+[environment]
+HOME = "$HOME"
+
+[fake_home]
+root = ".doh/home"
+real_paths = []
+
+[hosts.all]
+# bind_paths = [ "${local}:${remote}"]
+# bind_paths = [ "$HOME:$HOME",]
+bind_paths = [
+    # Mounting users
+    "/etc/shadow:/etc/shadow",
+    "/etc/passwd:/etc/passwd",
+    "/etc/group:/etc/group",
+]
+
+
+[hosts.jcy-pop]
